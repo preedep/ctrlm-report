@@ -4,16 +4,38 @@
 
 ## Project Identity
 
-`ctrlm-report` is a Rust binary crate (edition 2024). Its purpose is to generate reports for `ctrlm` (control-m) workflows. Currently in early scaffolding — entry point is `src/main.rs`.
-`ctrlm-report` is cli application for generate web report static (for stand alone without serverside) and built-in json file `dataset/output.json`
+`ctrlm-report` is a Rust binary crate (edition 2024). Its purpose is to generate self-contained HTML reports for `ctrlm` (control-m) workflows.
+It reads `dataset/output.json`, embeds the data into `src/template.html`, and writes a standalone `report.html` — no server required.
 
 
 
 ## Architecture Boundaries
 
 - **Binary crate** — no library surface; all logic lives under `src/`.
-- Keep I/O (reading config, writing output) at the edges; pure logic in the middle.
-- If modules are added, separate concerns by: `input` (parsing/loading), `model` (domain types), `output` (formatting/rendering), `cli` (argument handling).
+- Keep I/O at the edges; pure logic in the middle.
+- Module layout:
+  - `main.rs` — CLI arg parsing via `clap`, wires `input` → `output`
+  - `input.rs` — loads and deserializes `output.json` into `Vec<Job>`
+  - `model.rs` — `Job` struct (all fields `#[serde(default)]`)
+  - `output.rs` — builds compact `ReportJob` (short serde keys to reduce size), serializes to JSON, and injects into `template.html` via `__DATA__` / `__GEN_TIME__` placeholders
+  - `template.html` — the full HTML/JS report template, embedded at compile time via `include_str!`
+
+## Dependencies
+
+```toml
+serde       = { version = "1", features = ["derive"] }
+serde_json  = "1"
+anyhow      = "1"
+thiserror   = "1"
+clap        = { version = "4", features = ["derive"] }
+```
+
+## CLI Usage
+
+```bash
+cargo run                                      # reads dataset/output.json, writes report.html
+cargo run -- -i path/to/data.json -o out.html  # custom input/output paths
+```
 
 
 ## DataSet 
@@ -54,9 +76,10 @@
 ## Pattern Decisions
 
 - Rust edition 2024.
-- Prefer `thiserror` for domain errors and `anyhow` for application-level error propagation when dependencies are added.
+- `thiserror` for domain errors, `anyhow` for application-level propagation.
 - No `unwrap`/`expect` in non-test code — propagate errors explicitly.
 - Derive `Debug` on all public types.
+- `ReportJob` uses short serde rename keys (`jn`, `fo`, `ap`, …) to reduce embedded JSON payload size.
 
 ## Build / Test / Run
 
@@ -79,12 +102,13 @@ cargo fmt                      # auto-format
 ```
 
 ## Output
-- Modern web static report and embded data (refer to `dataset/output.json`) 
+
+`report.html` — a single self-contained file. All data is embedded as a JSON constant inside the HTML; no external server or framework is required.
 
 ### Web static report
-- Support both safari , google chrome 
-- Design modern/clean/simple
-- use `Astro` Framework
+- Supports Safari and Google Chrome
+- Design: modern / clean / simple
+- Built as a single `report.html` (template in `src/template.html`, data injected at build time by `output.rs`)
 
 #### Features
 - Dashboard domain perspective relate with job control-m amount
