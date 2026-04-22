@@ -138,10 +138,15 @@ cargo fmt                      # auto-format
   - in subdomain should not display number of bullet (it's came from raw data) remove number `4 Internet Banking` to `Internet Banking`
 - Dashboard can display in perspective `app_port_application_plan`
 - Dashboard in `IT Division` perspective
-- Dashboard `Jobs by Application Plan` stacked bar chart
+- Dashboard `Application Plan and Job Control-M Related` stacked bar chart
   - Shows job count per `app_port_application_plan` stacked within each row
   - Toggle perspective: **By Domain** or **By IT Division**
   - Always uses full dataset (independent of plan perspective pills)
   - Color scheme: maintain=green, cloud migration=blue, decomission=red, replacement=amber, upgrade=purple, No plan=light-gray
   - Legend strip shows each plan label with its total job count
-  - Click any bar segment → navigates to Jobs tab pre-filtered by that domain/IT division AND that plan
+  - Drill-down behavior (same concept as Jobs by IT Division):
+    - Level 0: stacked chart — click any segment → drill down to application view for that domain/IT division + plan
+    - Level 1: simple bar chart of applications (`app_port_app_code`) in that segment, colored with the plan's color — click any bar → navigates to Jobs tab pre-filtered by domain/IT division + plan + app code
+    - Back button and breadcrumb appear at level 1; perspective toggle is hidden while drilling
+    - Switching perspective (By Domain / By IT Division) resets drill state to level 0
+    - Expand modal respects current drill level

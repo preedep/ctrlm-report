@@ -617,10 +617,12 @@
     <div class="section-card" style="margin-bottom:1.5rem">
       <div class="section-header">
         <div>
-          <h2>Application Plan and Job Control-M Related</h2>
-          <p>Stacked job count per plan — click any segment to filter the Jobs tab</p>
+          <h2 id="plan-chart-title">Application Plan and Job Control-M Related</h2>
+          <div id="plan-chart-breadcrumb" class="breadcrumb" style="display:none;margin-top:0.3rem"></div>
+          <p id="plan-chart-sub" style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">Stacked job count per plan — click any segment to drill down by application</p>
         </div>
         <div style="display:flex;gap:0.5rem;align-items:center">
+          <button id="plan-back-btn" class="drill-back-btn" style="display:none" onclick="planDrillBack()">← Back</button>
           <button class="plan-persp-btn active" data-persp="domain" onclick="setPlanPerspective('domain')">By Domain</button>
           <button class="plan-persp-btn" data-persp="itdiv" onclick="setPlanPerspective('itdiv')">By IT Division</button>
           <button class="expand-btn" title="Expand" onclick="expandPlanChart()">
@@ -1282,16 +1284,52 @@ const PLAN_COLORS = {
 
 let planPerspective      = 'domain';
 let planStackedChartInst = null;
+let planDrillState       = { level: 0, perspVal: null, plan: null };
 
 function setPlanPerspective(persp) {
   planPerspective = persp;
+  planDrillState  = { level: 0, perspVal: null, plan: null };
+  document.getElementById('plan-stacked-legend').style.display = '';
   document.querySelectorAll('.plan-persp-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.persp === persp);
   });
   rebuildPlanStackedChart();
 }
 
+function updatePlanBreadcrumb() {
+  const title     = document.getElementById('plan-chart-title');
+  const sub       = document.getElementById('plan-chart-sub');
+  const back      = document.getElementById('plan-back-btn');
+  const bc        = document.getElementById('plan-chart-breadcrumb');
+  const perspBtns = document.querySelectorAll('.plan-persp-btn');
+
+  if (planDrillState.level === 0) {
+    title.textContent  = 'Application Plan and Job Control-M Related';
+    sub.textContent    = 'Stacked job count per plan — click any segment to drill down by application';
+    back.style.display = 'none';
+    bc.style.display   = 'none';
+    perspBtns.forEach(b => b.style.display = '');
+  } else {
+    const perspLabel = planPerspective === 'domain'
+      ? stripPrefix(planDrillState.perspVal)
+      : planDrillState.perspVal;
+    title.textContent  = 'Applications in ' + perspLabel + ' · ' + planDrillState.plan;
+    sub.textContent    = 'Click an application to view its jobs';
+    back.style.display = 'inline-flex';
+    bc.style.display   = 'flex';
+    const allLabel = planPerspective === 'domain' ? 'All Domains' : 'All IT Divisions';
+    bc.innerHTML = `<span class="bc-link" onclick="planDrillBack()">${allLabel}</span>` +
+                   `<span class="bc-sep">›</span>` +
+                   `<span class="bc-active">${escHtml(perspLabel)} · ${escHtml(planDrillState.plan)}</span>`;
+    perspBtns.forEach(b => b.style.display = 'none');
+  }
+}
+
 function rebuildPlanStackedChart() {
+  planDrillState = { level: 0, perspVal: null, plan: null };
+  updatePlanBreadcrumb();
+  document.getElementById('plan-stacked-legend').style.display = '';
+
   const perspKey = planPerspective === 'domain' ? 'dom' : 'div';
 
   // Build map: perspValue → { planLabel → count }
@@ -1354,7 +1392,8 @@ function rebuildPlanStackedChart() {
         if (!els.length) return;
         const perspVal = entries[els[0].index][0];
         const plan     = plans[els[0].datasetIndex];
-        navigateToJobsByPlan(perspVal, plan);
+        planDrillState = { level: 1, perspVal, plan };
+        showPlanAppView();
       },
       plugins: {
         legend: { display: false },
@@ -1385,6 +1424,95 @@ function navigateToJobsByPlan(perspVal, plan) {
   }
   planFilter = plan;
   document.getElementById('plan-filter').value = plan;
+
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelector('[data-tab="jobs"]').classList.add('active');
+  document.getElementById('tab-jobs').classList.add('active');
+
+  currentPage = 1;
+  applyFilters();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showPlanAppView() {
+  updatePlanBreadcrumb();
+  document.getElementById('plan-stacked-legend').style.display = 'none';
+
+  const perspKey = planPerspective === 'domain' ? 'dom' : 'div';
+  const counts   = {};
+  DATA.filter(r => {
+    const pv   = r[perspKey] || '';
+    const plan = r.pl || 'No plan';
+    return pv === planDrillState.perspVal && plan === planDrillState.plan;
+  }).forEach(r => {
+    const code = r.ac || '(No App Code)';
+    counts[code] = (counts[code] || 0) + 1;
+  });
+  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+
+  const wrapper  = document.getElementById('plan-stacked-wrapper');
+  wrapper.style.height = Math.max(200, Math.min(entries.length * 34 + 64, 760)) + 'px';
+
+  if (planStackedChartInst) planStackedChartInst.destroy();
+  const canvas = document.getElementById('planStackedChart');
+  canvas.style.cursor = 'pointer';
+
+  const barColor = PLAN_COLORS[planDrillState.plan] || '#94a3b8';
+  planStackedChartInst = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: entries.map(([k]) => k),
+      datasets: [{
+        label: 'Jobs',
+        data: entries.map(([, v]) => v),
+        backgroundColor: barColor,
+        borderRadius: 3,
+        borderWidth: 0,
+      }],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      onClick: (evt, els) => {
+        if (!els.length) return;
+        navigateToJobsByPlanApp(planDrillState.perspVal, planDrillState.plan, entries[els[0].index][0]);
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.x.toLocaleString() + ' jobs' } },
+      },
+      scales: {
+        x: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+        y: { grid: { display: false }, ticks: { font: { size: 11 } } },
+      },
+    },
+  });
+}
+
+function planDrillBack() {
+  planDrillState = { level: 0, perspVal: null, plan: null };
+  document.getElementById('plan-stacked-legend').style.display = '';
+  rebuildPlanStackedChart();
+}
+
+function navigateToJobsByPlanApp(perspVal, plan, appCode) {
+  resetAllJobFilters();
+
+  if (planPerspective === 'domain') {
+    domainFilter = perspVal;
+    document.getElementById('domain-filter').value = perspVal;
+    populateSubdomainDropdown(perspVal);
+  } else {
+    itDivFilter = perspVal;
+    document.getElementById('itdiv-filter').value = perspVal;
+  }
+  planFilter = plan;
+  document.getElementById('plan-filter').value = plan;
+  if (appCode !== '(No App Code)') {
+    appCodeFilter = appCode;
+  }
 
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -1781,6 +1909,38 @@ function expandITDivChart() {
 }
 
 function expandPlanChart() {
+  if (planDrillState.level === 1) {
+    // Drill-down view: show applications for current perspVal + plan
+    const perspKey = planPerspective === 'domain' ? 'dom' : 'div';
+    const counts   = {};
+    DATA.filter(r => {
+      const pv   = r[perspKey] || '';
+      const plan = r.pl || 'No plan';
+      return pv === planDrillState.perspVal && plan === planDrillState.plan;
+    }).forEach(r => {
+      const code = r.ac || '(No App Code)';
+      counts[code] = (counts[code] || 0) + 1;
+    });
+    const entries  = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    const perspLabel = planPerspective === 'domain'
+      ? stripPrefix(planDrillState.perspVal) : planDrillState.perspVal;
+    const title = 'Applications in ' + perspLabel + ' · ' + planDrillState.plan;
+    const barColor = PLAN_COLORS[planDrillState.plan] || '#94a3b8';
+
+    openChartModal(title, canvas => {
+      expandedChartInst = new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels: entries.map(([k]) => k),
+          datasets: [{ label: 'Jobs', data: entries.map(([, v]) => v),
+            backgroundColor: barColor, borderRadius: 4, borderSkipped: false }],
+        },
+        options: makeBarOptions(),
+      });
+    });
+    return;
+  }
+
   const perspKey = planPerspective === 'domain' ? 'dom' : 'div';
   const map = {};
   DATA.forEach(r => {
