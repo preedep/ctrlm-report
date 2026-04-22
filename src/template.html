@@ -617,7 +617,7 @@
     <div class="section-card" style="margin-bottom:1.5rem">
       <div class="section-header">
         <div>
-          <h2>Jobs by Application Plan</h2>
+          <h2>Application Plan and Job Control-M Related</h2>
           <p>Stacked job count per plan — click any segment to filter the Jobs tab</p>
         </div>
         <div style="display:flex;gap:0.5rem;align-items:center">
@@ -1803,7 +1803,7 @@ function expandPlanChart() {
     label: plan, data: entries.map(([, pm]) => pm[plan] || 0),
     backgroundColor: PLAN_COLORS[plan] || '#94a3b8', borderWidth: 0, borderRadius: 2,
   }));
-  const title = 'Jobs by Application Plan — ' + (planPerspective === 'domain' ? 'By Domain' : 'By IT Division');
+  const title = 'Application Plan and Job Control-M Related — ' + (planPerspective === 'domain' ? 'By Domain' : 'By IT Division');
 
   openChartModal(title, canvas => {
     expandedChartInst = new Chart(canvas, {
