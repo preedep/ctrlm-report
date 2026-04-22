@@ -401,6 +401,52 @@
     }
     .plan-legend-count { font-weight: 600; color: var(--text); }
 
+    /* ── Expand button ── */
+    .expand-btn {
+      width: 28px; height: 28px; border-radius: 6px;
+      border: 1px solid var(--border); background: white; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-muted); flex-shrink: 0;
+      transition: all 0.15s;
+    }
+    .expand-btn:hover {
+      background: var(--primary-light); border-color: var(--primary); color: var(--primary);
+    }
+
+    /* ── Chart expand modal ── */
+    .chart-modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55); z-index: 200;
+      align-items: center; justify-content: center; padding: 2rem;
+    }
+    .chart-modal-overlay.open { display: flex; }
+
+    .chart-modal {
+      background: white; border-radius: 16px;
+      width: min(96vw, 1280px); max-height: 90vh;
+      display: flex; flex-direction: column;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+
+    .chart-modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+
+    .chart-modal-title { font-size: 0.9375rem; font-weight: 600; }
+
+    .chart-modal-close {
+      width: 32px; height: 32px; border-radius: 8px;
+      border: 1px solid var(--border); background: white; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.25rem; line-height: 1; color: var(--text-muted);
+      transition: all 0.15s;
+    }
+    .chart-modal-close:hover { background: var(--danger-light); color: var(--danger); border-color: var(--danger); }
+
+    .chart-modal-body { flex: 1; padding: 1.5rem; overflow: hidden; min-height: 0; }
+
     /* ── Responsive ── */
     @media (max-width: 1100px) {
       .charts-grid { grid-template-columns: 1fr; }
@@ -513,6 +559,12 @@
           <div style="display:flex;gap:0.5rem;align-items:center">
             <button id="drill-back-btn" class="drill-back-btn" style="display:none" onclick="drillBack()">← Back</button>
             <button id="view-jobs-btn" class="drill-back-btn" style="display:none;background:var(--primary);color:white;border-color:var(--primary)" onclick="viewJobsFromDrill()">View Jobs →</button>
+            <button class="expand-btn" title="Expand" onclick="expandDomainChart()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
         </div>
         <div class="chart-wrapper" style="height:320px" id="domain-chart-wrapper">
@@ -520,9 +572,43 @@
         </div>
       </div>
       <div class="chart-card">
-        <h2>Application Type Distribution</h2>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+          <h2 style="margin-bottom:0">Application Type Distribution</h2>
+          <button class="expand-btn" title="Expand" onclick="expandTypeChart()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+              <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+            </svg>
+          </button>
+        </div>
         <div class="chart-wrapper" style="height:320px">
           <canvas id="typeChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- IT Division Chart -->
+    <div class="section-card" style="margin-bottom:1.5rem">
+      <div class="section-header">
+        <div>
+          <h2 id="itdiv-chart-title">Jobs by IT Division</h2>
+          <div id="itdiv-breadcrumb" class="breadcrumb" style="display:none;margin-top:0.3rem"></div>
+          <p id="itdiv-chart-sub" style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">Job distribution across IT divisions — click a bar to drill down</p>
+        </div>
+        <div style="display:flex;gap:0.5rem;align-items:center">
+          <button id="itdiv-back-btn" class="drill-back-btn" style="display:none" onclick="itDivDrillBack()">← Back</button>
+          <span class="badge badge-blue" id="itdiv-count-badge"></span>
+          <button class="expand-btn" title="Expand" onclick="expandITDivChart()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+              <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div style="padding:1.5rem">
+        <div id="itdiv-chart-wrapper" class="chart-wrapper" style="height:400px">
+          <canvas id="itDivChart"></canvas>
         </div>
       </div>
     </div>
@@ -537,28 +623,18 @@
         <div style="display:flex;gap:0.5rem;align-items:center">
           <button class="plan-persp-btn active" data-persp="domain" onclick="setPlanPerspective('domain')">By Domain</button>
           <button class="plan-persp-btn" data-persp="itdiv" onclick="setPlanPerspective('itdiv')">By IT Division</button>
+          <button class="expand-btn" title="Expand" onclick="expandPlanChart()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+              <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+            </svg>
+          </button>
         </div>
       </div>
       <div class="plan-legend" id="plan-stacked-legend"></div>
       <div style="padding:1.5rem">
         <div id="plan-stacked-wrapper" class="chart-wrapper" style="height:400px">
           <canvas id="planStackedChart"></canvas>
-        </div>
-      </div>
-    </div>
-
-    <!-- IT Division Chart -->
-    <div class="section-card" style="margin-bottom:1.5rem">
-      <div class="section-header">
-        <div>
-          <h2>Jobs by IT Division</h2>
-          <p>Job distribution across IT divisions — click a bar to view jobs</p>
-        </div>
-        <span class="badge badge-blue" id="itdiv-count-badge"></span>
-      </div>
-      <div style="padding:1.5rem">
-        <div id="itdiv-chart-wrapper" class="chart-wrapper" style="height:400px">
-          <canvas id="itDivChart"></canvas>
         </div>
       </div>
     </div>
@@ -638,6 +714,21 @@
   </main>
 </div>
 
+<!-- Chart Expand Modal -->
+<div class="chart-modal-overlay" id="chart-modal-overlay" onclick="closeChartModal()">
+  <div class="chart-modal" onclick="event.stopPropagation()">
+    <div class="chart-modal-header">
+      <span class="chart-modal-title" id="modal-chart-title"></span>
+      <button class="chart-modal-close" onclick="closeChartModal()">&times;</button>
+    </div>
+    <div class="chart-modal-body">
+      <div class="chart-wrapper" style="height:calc(90vh - 100px)" id="modal-chart-wrapper">
+        <canvas id="modal-chart-canvas"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 // ── Embedded data ──
@@ -672,13 +763,14 @@ let pageSize      = 20;
 let sortCol       = null;
 let sortDir       = 'asc';
 let searchQuery   = '';
-let domainFilter  = '';
-let sdFilter      = '';
-let itDivFilter   = '';
-let typeFilter    = '';
-let planFilter    = '';
-let critFilter    = '';
-let dashPlan      = '';
+let domainFilter   = '';
+let sdFilter       = '';
+let itDivFilter    = '';
+let typeFilter     = '';
+let planFilter     = '';
+let critFilter     = '';
+let appCodeFilter  = '';
+let dashPlan       = '';
 
 // ── Mutable dashboard data ──
 let domainCounts = {};
@@ -878,6 +970,7 @@ function resetAllJobFilters() {
   typeFilter = '';
   planFilter = '';
   critFilter = '';
+  appCodeFilter = '';
   document.getElementById('search-input').value = '';
   document.getElementById('domain-filter').value = '';
   populateSubdomainDropdown('');
@@ -1030,20 +1123,10 @@ function rebuildTypeChart(d) {
 }
 
 // ── IT Division chart ──
-let itDivChartInst = null;
+let itDivChartInst  = null;
+let itDivDrillState = { level: 0, division: null };
 
-function rebuildITDivChart(d) {
-  const counts = {};
-  d.forEach(r => {
-    const div = r.div || '';
-    if (!div) return;
-    counts[div] = (counts[div] || 0) + 1;
-  });
-  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-
-  document.getElementById('itdiv-count-badge').textContent =
-    entries.length + ' division' + (entries.length !== 1 ? 's' : '');
-
+function renderITDivChart(entries, labelFn, clickHandler) {
   const wrapper = document.getElementById('itdiv-chart-wrapper');
   const height  = Math.max(200, Math.min(entries.length * 32 + 48, 640));
   wrapper.style.height = height + 'px';
@@ -1055,7 +1138,7 @@ function rebuildITDivChart(d) {
   itDivChartInst = new Chart(canvas, {
     type: 'bar',
     data: {
-      labels: entries.map(([k]) => k),
+      labels: entries.map(([k]) => labelFn(k)),
       datasets: [{
         label: 'Jobs',
         data: entries.map(([, v]) => v),
@@ -1069,7 +1152,7 @@ function rebuildITDivChart(d) {
       responsive: true,
       maintainAspectRatio: false,
       onClick: (evt, els) => {
-        if (els.length > 0) navigateToJobsByITDiv(entries[els[0].index][0]);
+        if (els.length > 0) clickHandler(entries[els[0].index][0]);
       },
       plugins: {
         legend: { display: false },
@@ -1083,15 +1166,98 @@ function rebuildITDivChart(d) {
   });
 }
 
+function updateITDivBreadcrumb() {
+  const title = document.getElementById('itdiv-chart-title');
+  const sub   = document.getElementById('itdiv-chart-sub');
+  const back  = document.getElementById('itdiv-back-btn');
+  const bc    = document.getElementById('itdiv-breadcrumb');
+
+  if (itDivDrillState.level === 0) {
+    title.textContent  = 'Jobs by IT Division';
+    sub.textContent    = 'Job distribution across IT divisions — click a bar to drill down';
+    back.style.display = 'none';
+    bc.style.display   = 'none';
+  } else {
+    title.textContent  = 'Applications in ' + itDivDrillState.division;
+    sub.textContent    = 'Click an application to view its jobs';
+    back.style.display = 'inline-flex';
+    bc.style.display   = 'flex';
+    bc.innerHTML = `<span class="bc-link" onclick="itDivDrillBack()">All IT Divisions</span><span class="bc-sep">›</span><span class="bc-active">${escHtml(itDivDrillState.division)}</span>`;
+  }
+}
+
+function showITDivTopView(d) {
+  itDivDrillState = { level: 0, division: null };
+  updateITDivBreadcrumb();
+
+  const counts = {};
+  d.forEach(r => {
+    if (!r.div) return;
+    counts[r.div] = (counts[r.div] || 0) + 1;
+  });
+  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+
+  document.getElementById('itdiv-count-badge').textContent =
+    entries.length + ' division' + (entries.length !== 1 ? 's' : '');
+
+  renderITDivChart(entries, k => k, division => {
+    itDivDrillState = { level: 1, division };
+    showITDivAppView();
+  });
+}
+
+function showITDivAppView() {
+  updateITDivBreadcrumb();
+  const d = getDashData();
+  const counts = {};
+  d.filter(r => r.div === itDivDrillState.division).forEach(r => {
+    const code = r.ac || '(No App Code)';
+    counts[code] = (counts[code] || 0) + 1;
+  });
+  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+
+  document.getElementById('itdiv-count-badge').textContent =
+    entries.length + ' app' + (entries.length !== 1 ? 's' : '');
+
+  renderITDivChart(entries, k => k, code => {
+    navigateToJobsByITDivApp(itDivDrillState.division, code);
+  });
+}
+
+function itDivDrillBack() {
+  showITDivTopView(getDashData());
+}
+
+function rebuildITDivChart(d) {
+  showITDivTopView(d);
+}
+
 function navigateToJobsByITDiv(div) {
   resetAllJobFilters();
-
   itDivFilter = div;
   document.getElementById('itdiv-filter').value = div;
 
   if (dashPlan) {
     planFilter = dashPlan;
     document.getElementById('plan-filter').value = dashPlan;
+  }
+
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelector('[data-tab="jobs"]').classList.add('active');
+  document.getElementById('tab-jobs').classList.add('active');
+
+  currentPage = 1;
+  applyFilters();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function navigateToJobsByITDivApp(div, code) {
+  resetAllJobFilters();
+  itDivFilter = div;
+  document.getElementById('itdiv-filter').value = div;
+  if (code !== '(No App Code)') {
+    appCodeFilter = code;
   }
 
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -1368,12 +1534,13 @@ document.getElementById('critical-filter').addEventListener('change', e => {
 // ── Core filter & sort ──
 function applyFilters() {
   filteredData = DATA.filter(row => {
-    if (domainFilter && row.dom  !== domainFilter)           return false;
-    if (sdFilter     && row.sd   !== sdFilter)               return false;
-    if (itDivFilter  && (row.div || '') !== itDivFilter)     return false;
-    if (typeFilter   && row.at   !== typeFilter)             return false;
-    if (planFilter   && (row.pl || '') !== planFilter) return false;
-    if (critFilter   && row.cr  !== critFilter)        return false;
+    if (domainFilter  && row.dom  !== domainFilter)           return false;
+    if (sdFilter      && row.sd   !== sdFilter)               return false;
+    if (itDivFilter   && (row.div || '') !== itDivFilter)     return false;
+    if (typeFilter    && row.at   !== typeFilter)             return false;
+    if (planFilter    && (row.pl  || '') !== planFilter)      return false;
+    if (critFilter    && row.cr  !== critFilter)              return false;
+    if (appCodeFilter && (row.ac  || '') !== appCodeFilter)   return false;
     if (searchQuery) {
       const hay = COLUMNS.map(c => (row[c.key] || '').toLowerCase()).join('\x00');
       if (!hay.includes(searchQuery)) return false;
@@ -1490,6 +1657,170 @@ function changePageSize(size) {
   pageSize    = size;
   currentPage = 1;
   applyFilters();
+}
+
+// ── Chart expand modal ──
+let expandedChartInst = null;
+
+function openChartModal(title, renderFn) {
+  document.getElementById('modal-chart-title').textContent = title;
+  document.getElementById('chart-modal-overlay').classList.add('open');
+  requestAnimationFrame(() => {
+    if (expandedChartInst) { expandedChartInst.destroy(); expandedChartInst = null; }
+    renderFn(document.getElementById('modal-chart-canvas'));
+  });
+}
+
+function closeChartModal() {
+  document.getElementById('chart-modal-overlay').classList.remove('open');
+  if (expandedChartInst) { expandedChartInst.destroy(); expandedChartInst = null; }
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeChartModal(); });
+
+function makeBarOptions(extraOpts) {
+  return Object.assign({
+    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.x.toLocaleString() + ' jobs' } },
+    },
+    scales: {
+      x: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+      y: { grid: { display: false }, ticks: { font: { size: 12 } } },
+    },
+  }, extraOpts || {});
+}
+
+function expandDomainChart() {
+  let entries, title;
+  if (drillState.level === 0) {
+    entries = getDomainEntries();
+    title   = 'Jobs by Domain';
+  } else if (drillState.level === 1) {
+    entries = getSubDomainEntries(drillState.domain);
+    title   = 'Sub-Domains — ' + stripPrefix(drillState.domain);
+  } else {
+    entries = getITDivEntries(drillState.domain, drillState.subDomain);
+    title   = 'IT Divisions — ' + stripPrefix(drillState.subDomain);
+  }
+  const labelFn = drillState.level === 0 ? k => stripPrefix(k)
+    : drillState.level === 1 ? k => stripPrefix(k) || '(No Sub-Domain)'
+    : k => k || '(No Division)';
+
+  openChartModal(title, canvas => {
+    expandedChartInst = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: entries.map(([k]) => labelFn(k)),
+        datasets: [{ label: 'Jobs', data: entries.map(([, v]) => v),
+          backgroundColor: entries.map((_, i) => domainColors[i % domainColors.length]),
+          borderRadius: 4, borderSkipped: false }],
+      },
+      options: makeBarOptions(),
+    });
+  });
+}
+
+function expandTypeChart() {
+  const d = getDashData();
+  const typeCounts = {};
+  d.forEach(r => { const t = r.at || '(None)'; typeCounts[t] = (typeCounts[t] || 0) + 1; });
+  const entries = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
+
+  openChartModal('Application Type Distribution', canvas => {
+    expandedChartInst = new Chart(canvas, {
+      type: 'doughnut',
+      data: {
+        labels: entries.map(([t]) => t),
+        datasets: [{ data: entries.map(([, v]) => v),
+          backgroundColor: ['#2563eb','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#64748b'],
+          borderWidth: 2, borderColor: '#ffffff' }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'right', labels: { font: { size: 13 }, padding: 16, usePointStyle: true } },
+          tooltip: { callbacks: { label: ctx => ' ' + ctx.label + ': ' + ctx.parsed.toLocaleString() } },
+        },
+      },
+    });
+  });
+}
+
+function expandITDivChart() {
+  const d = getDashData();
+  let entries, title;
+  if (itDivDrillState.level === 0) {
+    const counts = {};
+    d.forEach(r => { if (!r.div) return; counts[r.div] = (counts[r.div] || 0) + 1; });
+    entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    title   = 'Jobs by IT Division';
+  } else {
+    const counts = {};
+    d.filter(r => r.div === itDivDrillState.division).forEach(r => {
+      const code = r.ac || '(No App Code)';
+      counts[code] = (counts[code] || 0) + 1;
+    });
+    entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    title   = 'Applications in ' + itDivDrillState.division;
+  }
+
+  openChartModal(title, canvas => {
+    expandedChartInst = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: entries.map(([k]) => k),
+        datasets: [{ label: 'Jobs', data: entries.map(([, v]) => v),
+          backgroundColor: entries.map((_, i) => domainColors[i % domainColors.length]),
+          borderRadius: 4, borderSkipped: false }],
+      },
+      options: makeBarOptions(),
+    });
+  });
+}
+
+function expandPlanChart() {
+  const perspKey = planPerspective === 'domain' ? 'dom' : 'div';
+  const map = {};
+  DATA.forEach(r => {
+    const pv = r[perspKey] || '';
+    if (!pv || pv === '(No Domain)') return;
+    const plan = r.pl || 'No plan';
+    if (!map[pv]) map[pv] = {};
+    map[pv][plan] = (map[pv][plan] || 0) + 1;
+  });
+  const entries = Object.entries(map)
+    .map(([k, pm]) => [k, pm, Object.values(pm).reduce((a, b) => a + b, 0)])
+    .sort((a, b) => b[2] - a[2]);
+
+  const planTotals = {};
+  DATA.forEach(r => { const p = r.pl || 'No plan'; planTotals[p] = (planTotals[p] || 0) + 1; });
+  const plans = Object.keys(planTotals).sort((a, b) => planTotals[b] - planTotals[a]);
+
+  const labels   = entries.map(([k]) => planPerspective === 'domain' ? stripPrefix(k) : k);
+  const datasets = plans.map(plan => ({
+    label: plan, data: entries.map(([, pm]) => pm[plan] || 0),
+    backgroundColor: PLAN_COLORS[plan] || '#94a3b8', borderWidth: 0, borderRadius: 2,
+  }));
+  const title = 'Jobs by Application Plan — ' + (planPerspective === 'domain' ? 'By Domain' : 'By IT Division');
+
+  openChartModal(title, canvas => {
+    expandedChartInst = new Chart(canvas, {
+      type: 'bar',
+      data: { labels, datasets },
+      options: makeBarOptions({
+        plugins: {
+          legend: { display: true, position: 'top', labels: { font: { size: 12 }, usePointStyle: true, padding: 14 } },
+          tooltip: { callbacks: { label: ctx => ' ' + ctx.dataset.label + ': ' + ctx.parsed.x.toLocaleString() + ' jobs' } },
+        },
+        scales: {
+          x: { stacked: true, beginAtZero: true, grid: { color: '#f1f5f9' } },
+          y: { stacked: true, grid: { display: false }, ticks: { font: { size: 12 } } },
+        },
+      }),
+    });
+  });
 }
 
 // ── Initial render ──
