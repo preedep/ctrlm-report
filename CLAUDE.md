@@ -98,14 +98,26 @@ cargo fmt                      # auto-format
   if app_port_revised_to_sub_domain is not empty {
      sub domain = app_port_revised_to_sub_domain
   } 
-  
 ```
 - Can click on dashboard `Job by domain` goto tab job and search with current criteria ex. current doamin -> search by domain , current sub domain -> search by domain and sub domain
 - Tab job
   -add dropdown filter `app_port_application_plan` 
+  -table result add column `sub domain` which use logic
+```
+  if app_port_revised_to_sub_domain is not empty {
+     sub domain = app_port_revised_to_sub_domain
+  } 
+```
 - Dropdown list in tab job 
   - Domain not display `(No Domain)`
   - Sub domain should display and filterd after select domain (all domain should not display)
   - in subdomain should not display number of bullet (it's came from raw data) remove number `4 Internet Banking` to `Internet Banking`
 - Dashboard can display in perspective `app_port_application_plan`
-- Dasboard in `IT Division` perspective
+- Dashboard in `IT Division` perspective
+- Dashboard `Jobs by Application Plan` stacked bar chart
+  - Shows job count per `app_port_application_plan` stacked within each row
+  - Toggle perspective: **By Domain** or **By IT Division**
+  - Always uses full dataset (independent of plan perspective pills)
+  - Color scheme: maintain=green, cloud migration=blue, decomission=red, replacement=amber, upgrade=purple, No plan=light-gray
+  - Legend strip shows each plan label with its total job count
+  - Click any bar segment → navigates to Jobs tab pre-filtered by that domain/IT division AND that plan
