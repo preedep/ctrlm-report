@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control-M Report</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --primary-light: #dbeafe;
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --success: #10b981;
+      --success-light: #d1fae5;
+      --warning: #f59e0b;
+      --warning-light: #fef3c7;
+      --danger: #ef4444;
+      --danger-light: #fee2e2;
+      --purple: #8b5cf6;
+      --purple-light: #ede9fe;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+      color: white;
+      padding: 0 2rem;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-brand { display: flex; align-items: center; gap: 0.75rem; }
+
+    .header-icon {
+      width: 36px; height: 36px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    header h1 { font-size: 1.125rem; font-weight: 700; letter-spacing: -0.01em; }
+    header p  { font-size: 0.75rem; opacity: 0.7; margin-top: 1px; }
+
+    .header-meta { font-size: 0.75rem; opacity: 0.7; text-align: right; }
+
+    /* ── Tab Nav ── */
+    nav.tabs {
+      background: white;
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex;
+    }
+
+    .tab-btn {
+      padding: 0 1.5rem; height: 48px;
+      border: none; background: none; cursor: pointer;
+      font-size: 0.875rem; font-weight: 500; color: var(--text-muted);
+      border-bottom: 2px solid transparent; margin-bottom: -1px;
+      transition: color 0.15s, border-color 0.15s;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+
+    .tab-btn:hover { color: var(--primary); }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+    .tab-badge {
+      background: var(--primary-light); color: var(--primary);
+      padding: 1px 6px; border-radius: 9999px;
+      font-size: 0.7rem; font-weight: 600;
+    }
+
+    /* ── Main layout ── */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    main { padding: 1.5rem 2rem; max-width: 1600px; margin: 0 auto; }
+
+    /* ── Perspective bar ── */
+    .perspective-bar {
+      display: flex; align-items: center; gap: 0.5rem;
+      margin-bottom: 1rem; flex-wrap: wrap;
+      background: var(--card); border-radius: 10px;
+      padding: 0.75rem 1.25rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+
+    .perspective-label {
+      font-size: 0.75rem; color: var(--text-muted);
+      font-weight: 600; white-space: nowrap; margin-right: 0.25rem;
+    }
+
+    .plan-pill {
+      padding: 0.25rem 0.875rem; border-radius: 9999px;
+      border: 1px solid var(--border); background: white;
+      font-size: 0.8125rem; cursor: pointer;
+      transition: all 0.15s; color: var(--text);
+      font-family: inherit;
+    }
+
+    .plan-pill:hover:not(.active) {
+      border-color: var(--primary); color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    .plan-pill.active {
+      background: var(--primary); border-color: var(--primary);
+      color: white; font-weight: 600;
+    }
+
+    /* ── Stats grid ── */
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 1rem; margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+      background: var(--card); border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+      display: flex; align-items: flex-start; gap: 1rem;
+      border-left: 4px solid transparent;
+    }
+
+    .stat-card.blue   { border-left-color: var(--primary); }
+    .stat-card.green  { border-left-color: var(--success); }
+    .stat-card.orange { border-left-color: var(--warning); }
+    .stat-card.red    { border-left-color: var(--danger);  }
+
+    .stat-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; font-size: 1.25rem;
+    }
+
+    .stat-card.blue   .stat-icon { background: var(--primary-light); }
+    .stat-card.green  .stat-icon { background: var(--success-light); }
+    .stat-card.orange .stat-icon { background: var(--warning-light); }
+    .stat-card.red    .stat-icon { background: var(--danger-light);  }
+
+    .stat-body .label {
+      font-size: 0.7rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted);
+    }
+
+    .stat-body .value {
+      font-size: 1.75rem; font-weight: 700;
+      line-height: 1.1; margin-top: 0.25rem; letter-spacing: -0.02em;
+    }
+
+    .stat-body .sub { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem; }
+
+    /* ── Charts grid ── */
+    .charts-grid {
+      display: grid; grid-template-columns: 2fr 1fr;
+      gap: 1rem; margin-bottom: 1.5rem;
+    }
+
+    .chart-card {
+      background: var(--card); border-radius: 12px; padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+    }
+
+    .chart-card h2 { font-size: 0.875rem; font-weight: 600; color: var(--text); margin-bottom: 1rem; }
+    .chart-wrapper { position: relative; }
+
+    /* ── Section card ── */
+    .section-card {
+      background: var(--card); border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+      overflow: hidden; margin-bottom: 1.5rem;
+    }
+
+    .section-header {
+      padding: 1rem 1.5rem; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .section-header h2 { font-size: 0.875rem; font-weight: 600; }
+    .section-header p  { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── Table ── */
+    .table-wrapper { overflow-x: auto; }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    thead th {
+      padding: 0.625rem 1rem; text-align: left;
+      font-size: 0.7rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted);
+      background: #f8fafc; border-bottom: 1px solid var(--border);
+      white-space: nowrap; user-select: none;
+    }
+
+    thead th.sortable { cursor: pointer; }
+    thead th.sortable:hover { background: #f1f5f9; color: var(--primary); }
+    thead th.sort-asc::after  { content: ' ↑'; color: var(--primary); }
+    thead th.sort-desc::after { content: ' ↓'; color: var(--primary); }
+
+    tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f8fafc; }
+
+    tbody td {
+      padding: 0.625rem 1rem; font-size: 0.8125rem; color: var(--text);
+      max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    td.job-name { font-weight: 500; color: var(--primary-dark); max-width: 260px; }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 9999px;
+      font-size: 0.7rem; font-weight: 600; white-space: nowrap;
+    }
+
+    .badge-blue   { background: var(--primary-light); color: #1d4ed8; }
+    .badge-green  { background: var(--success-light); color: #065f46; }
+    .badge-red    { background: var(--danger-light);  color: #991b1b; }
+    .badge-orange { background: var(--warning-light); color: #92400e; }
+    .badge-purple { background: var(--purple-light);  color: #5b21b6; }
+    .badge-gray   { background: #f1f5f9;              color: #475569; }
+    .badge-teal   { background: #ccfbf1;              color: #0f766e; }
+
+    .no-app-code { color: var(--danger); font-weight: 500; }
+
+    /* ── Table controls ── */
+    .table-controls {
+      padding: 1rem 1.5rem; border-bottom: 1px solid var(--border);
+      display: flex; gap: 0.75rem; align-items: center;
+      flex-wrap: wrap; background: white;
+    }
+
+    .search-wrap { position: relative; flex: 1; min-width: 220px; }
+
+    .search-icon {
+      position: absolute; left: 0.75rem; top: 50%;
+      transform: translateY(-50%); color: var(--text-muted); pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%; padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+      border: 1px solid var(--border); border-radius: 8px;
+      font-size: 0.875rem; outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .search-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+    }
+
+    .filter-select {
+      padding: 0.5rem 0.75rem; border: 1px solid var(--border);
+      border-radius: 8px; font-size: 0.8125rem; background: white;
+      outline: none; cursor: pointer; color: var(--text);
+      transition: border-color 0.15s; min-width: 140px;
+    }
+
+    .filter-select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+    }
+
+    .filter-select:disabled {
+      background: #f8fafc; color: var(--text-muted); cursor: not-allowed;
+    }
+
+    .result-info {
+      font-size: 0.8125rem; color: var(--text-muted);
+      margin-left: auto; white-space: nowrap;
+    }
+
+    /* ── Pagination ── */
+    .pagination {
+      display: flex; align-items: center; gap: 0.25rem;
+      padding: 0.875rem 1.5rem; border-top: 1px solid var(--border); flex-wrap: wrap;
+    }
+
+    .pag-btn {
+      padding: 0.3125rem 0.625rem; border: 1px solid var(--border);
+      border-radius: 6px; background: white; cursor: pointer;
+      font-size: 0.8125rem; color: var(--text); transition: all 0.1s;
+      min-width: 32px; text-align: center;
+    }
+
+    .pag-btn:hover:not(:disabled):not(.active) {
+      background: var(--primary-light); border-color: var(--primary); color: var(--primary);
+    }
+
+    .pag-btn.active {
+      background: var(--primary); border-color: var(--primary);
+      color: white; font-weight: 600;
+    }
+
+    .pag-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .pag-ellipsis { padding: 0 0.25rem; color: var(--text-muted); }
+
+    .pag-right { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
+
+    .pag-size-select {
+      padding: 0.3125rem 0.5rem; border: 1px solid var(--border);
+      border-radius: 6px; font-size: 0.8125rem; background: white; outline: none; cursor: pointer;
+    }
+
+    /* ── Empty state ── */
+    .empty-state { padding: 3rem 2rem; text-align: center; color: var(--text-muted); }
+    .empty-state svg { margin-bottom: 0.75rem; opacity: 0.4; }
+
+    /* ── Unmatched grid ── */
+    .unmatched-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+
+    .unmatched-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0.625rem 1.5rem; border-bottom: 1px solid var(--border);
+    }
+
+    .unmatched-item:nth-child(odd) { border-right: 1px solid var(--border); }
+
+    .unmatched-app { font-size: 0.8125rem; font-weight: 500; color: var(--text); }
+
+    .unmatched-count {
+      font-size: 0.75rem; font-weight: 600;
+      background: var(--warning-light); color: #92400e;
+      padding: 2px 8px; border-radius: 9999px;
+    }
+
+    /* ── Drill-down ── */
+    .drill-header {
+      display: flex; align-items: flex-start;
+      justify-content: space-between; margin-bottom: 1rem; gap: 0.75rem;
+    }
+
+    .breadcrumb {
+      display: flex; align-items: center; gap: 0.25rem;
+      font-size: 0.75rem; margin-top: 0.3rem; flex-wrap: wrap;
+    }
+
+    .bc-link { color: var(--primary); cursor: pointer; }
+    .bc-link:hover { text-decoration: underline; }
+    .bc-active { color: var(--text); font-weight: 600; }
+    .bc-sep { color: var(--text-muted); }
+
+    .drill-back-btn {
+      display: inline-flex; align-items: center; gap: 0.25rem;
+      padding: 0.3125rem 0.75rem; border: 1px solid var(--border);
+      border-radius: 6px; background: white; color: var(--text);
+      font-size: 0.8125rem; cursor: pointer; flex-shrink: 0;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+
+    .drill-back-btn:hover {
+      background: var(--primary-light); border-color: var(--primary); color: var(--primary);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 1100px) {
+      .charts-grid { grid-template-columns: 1fr; }
+      .stats-grid  { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 640px) {
+      main { padding: 1rem; }
+      .stats-grid { grid-template-columns: 1fr; }
+      nav.tabs { padding: 0 1rem; }
+      header   { padding: 0 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="header-brand">
+    <div class="header-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+        <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+      </svg>
+    </div>
+    <div>
+      <h1>Control-M Report</h1>
+      <p id="gen-date">Loading…</p>
+    </div>
+  </div>
+  <div class="header-meta">
+    <div id="header-total"></div>
+    <div>ctrlm-report</div>
+  </div>
+</header>
+
+<!-- Tab Navigation -->
+<nav class="tabs">
+  <button class="tab-btn active" data-tab="dashboard">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+      <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+    </svg>
+    Dashboard
+  </button>
+  <button class="tab-btn" data-tab="jobs">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+      <rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/>
+      <line x1="9" y1="16" x2="13" y2="16"/>
+    </svg>
+    Jobs
+    <span class="tab-badge" id="jobs-badge">—</span>
+  </button>
+</nav>
+
+<!-- ── Dashboard Tab ── -->
+<div class="tab-content active" id="tab-dashboard">
+  <main>
+
+    <!-- Plan Perspective Pills -->
+    <div class="perspective-bar" id="perspective-bar">
+      <span class="perspective-label">Perspective:</span>
+      <!-- Populated by JS -->
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card blue">
+        <div class="stat-icon">📊</div>
+        <div class="stat-body">
+          <div class="label">Total Jobs</div>
+          <div class="value" id="stat-total">—</div>
+          <div class="sub">All control-m jobs</div>
+        </div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-icon">🏢</div>
+        <div class="stat-body">
+          <div class="label">Domains</div>
+          <div class="value" id="stat-domains">—</div>
+          <div class="sub">Application domains</div>
+        </div>
+      </div>
+      <div class="stat-card orange">
+        <div class="stat-icon">⚠️</div>
+        <div class="stat-body">
+          <div class="label">Unmatched</div>
+          <div class="value" id="stat-unmatched">—</div>
+          <div class="sub">No app portfolio link</div>
+        </div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-icon">🔴</div>
+        <div class="stat-body">
+          <div class="label">Critical Jobs</div>
+          <div class="value" id="stat-critical">—</div>
+          <div class="sub">control_m_critical = Yes</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="drill-header">
+          <div>
+            <h2 id="domain-chart-title">Jobs by Domain</h2>
+            <div id="domain-breadcrumb" class="breadcrumb" style="display:none"></div>
+          </div>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <button id="drill-back-btn" class="drill-back-btn" style="display:none" onclick="drillBack()">← Back</button>
+            <button id="view-jobs-btn" class="drill-back-btn" style="display:none;background:var(--primary);color:white;border-color:var(--primary)" onclick="viewJobsFromDrill()">View Jobs →</button>
+          </div>
+        </div>
+        <div class="chart-wrapper" style="height:320px" id="domain-chart-wrapper">
+          <canvas id="domainChart"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <h2>Application Type Distribution</h2>
+        <div class="chart-wrapper" style="height:320px">
+          <canvas id="typeChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- IT Division Chart -->
+    <div class="section-card" style="margin-bottom:1.5rem">
+      <div class="section-header">
+        <div>
+          <h2>Jobs by IT Division</h2>
+          <p>Job distribution across IT divisions — click a bar to view jobs</p>
+        </div>
+        <span class="badge badge-blue" id="itdiv-count-badge"></span>
+      </div>
+      <div style="padding:1.5rem">
+        <div id="itdiv-chart-wrapper" class="chart-wrapper" style="height:400px">
+          <canvas id="itDivChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Unmatched Applications -->
+    <div class="section-card">
+      <div class="section-header">
+        <div>
+          <h2>Unmatched Control-M Applications</h2>
+          <p>Applications not linked to Application Portfolio (app_port_app_code is empty)</p>
+        </div>
+        <span class="badge badge-orange" id="unmatched-count-badge"></span>
+      </div>
+      <div class="unmatched-grid" id="unmatched-grid"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── Jobs Tab ── -->
+<div class="tab-content" id="tab-jobs">
+  <main>
+    <div class="section-card">
+
+      <!-- Controls -->
+      <div class="table-controls">
+        <div class="search-wrap">
+          <span class="search-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+          </span>
+          <input type="text" id="search-input" class="search-input" placeholder="Search job name, folder, application…">
+        </div>
+        <select id="domain-filter" class="filter-select">
+          <option value="">All Domains</option>
+        </select>
+        <select id="subdomain-filter" class="filter-select" disabled>
+          <option value="">Select a domain first</option>
+        </select>
+        <select id="itdiv-filter" class="filter-select">
+          <option value="">All IT Divisions</option>
+        </select>
+        <select id="appltype-filter" class="filter-select">
+          <option value="">All Appl Types</option>
+        </select>
+        <select id="plan-filter" class="filter-select">
+          <option value="">All App Plans</option>
+        </select>
+        <select id="critical-filter" class="filter-select" style="min-width:110px">
+          <option value="">All Critical</option>
+          <option value="Yes">Critical: Yes</option>
+          <option value="No">Critical: No</option>
+        </select>
+        <span class="result-info" id="result-info"></span>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrapper">
+        <table>
+          <thead><tr id="jobs-thead"></tr></thead>
+          <tbody id="jobs-tbody"></tbody>
+        </table>
+        <div id="empty-state" class="empty-state" style="display:none">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+          <p style="font-weight:500;margin-bottom:0.25rem">No jobs found</p>
+          <p style="font-size:0.75rem">Try adjusting your search or filters</p>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination" id="pagination"></div>
+
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// ── Embedded data ──
+const DATA = __DATA__;
+const GEN_TIME = __GEN_TIME__;
+
+// Key mapping: jn=job_name, fo=folder, ap=application, sa=sub_application,
+// dom=domain, sd=sub_domain, ac=app_code, div=it_division, at=appl_type,
+// pl=app_plan, tt=task_type, cr=critical, pr=priority, cl=criticality_level
+
+const COLUMNS = [
+  { key: 'jn',  label: 'Job Name',        cls: 'job-name' },
+  { key: 'fo',  label: 'Folder'                           },
+  { key: 'ap',  label: 'Application'                      },
+  { key: 'sa',  label: 'Sub-Application'                  },
+  { key: 'dom', label: 'Domain'                           },
+  { key: 'ac',  label: 'App Code'                         },
+  { key: 'div', label: 'IT Division'                      },
+  { key: 'at',  label: 'Appl Type'                        },
+  { key: 'pl',  label: 'App Plan'                         },
+  { key: 'tt',  label: 'Task Type'                        },
+  { key: 'cr',  label: 'Critical'                         },
+  { key: 'pr',  label: 'Priority'                         },
+  { key: 'cl',  label: 'Criticality'                      },
+];
+
+// ── State ──
+let filteredData  = DATA;
+let currentPage   = 1;
+let pageSize      = 20;
+let sortCol       = null;
+let sortDir       = 'asc';
+let searchQuery   = '';
+let domainFilter  = '';
+let sdFilter      = '';
+let itDivFilter   = '';
+let typeFilter    = '';
+let planFilter    = '';
+let critFilter    = '';
+let dashPlan      = '';
+
+// ── Mutable dashboard data ──
+let domainCounts = {};
+let drillData    = {};
+
+// ── Helpers ──
+function stripPrefix(str) {
+  return str ? str.replace(/^\d+(\.\d+)*[\. ]\s*/, '') : '';
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+const APPL_TYPE_BADGE = {
+  OS:         'badge-blue',
+  FILE_TRANS: 'badge-green',
+  AWS:        'badge-orange',
+  AIRFLOWV2:  'badge-purple',
+  FileWatch:  'badge-teal',
+  BIM:        'badge-gray',
+};
+
+function applTypeBadge(t) {
+  const cls = APPL_TYPE_BADGE[t] || 'badge-gray';
+  return t ? `<span class="badge ${cls}">${escHtml(t)}</span>` : '<span class="badge badge-gray">—</span>';
+}
+
+function critBadge(v) {
+  return v === 'Yes'
+    ? '<span class="badge badge-red">Yes</span>'
+    : '<span class="badge badge-gray">No</span>';
+}
+
+const PLAN_BADGE = {
+  'cloud migration': 'badge-blue',
+  'decomission':     'badge-red',
+  'maintain':        'badge-green',
+  'replacement':     'badge-orange',
+  'upgrade':         'badge-purple',
+  'No plan':         'badge-gray',
+};
+
+function planBadge(p) {
+  if (!p) return '<span class="badge badge-gray">—</span>';
+  const cls = PLAN_BADGE[p] || 'badge-gray';
+  return `<span class="badge ${cls}">${escHtml(p)}</span>`;
+}
+
+// ── Init header ──
+document.getElementById('gen-date').textContent =
+  'Generated ' + new Date(GEN_TIME * 1000).toLocaleString();
+document.getElementById('header-total').textContent =
+  DATA.length.toLocaleString() + ' jobs';
+document.getElementById('jobs-badge').textContent =
+  DATA.length.toLocaleString();
+
+// ── Dashboard: data build ──
+function getDashData() {
+  return dashPlan ? DATA.filter(r => r.pl === dashPlan) : DATA;
+}
+
+function rebuildDashboardData() {
+  const d = getDashData();
+
+  const domainSet = new Set(d.map(r => r.dom).filter(v => v && v !== '(No Domain)'));
+  const unmatched = d.filter(r => !r.ac);
+  const critCount = d.filter(r => r.cr === 'Yes').length;
+
+  document.getElementById('stat-total').textContent     = d.length.toLocaleString();
+  document.getElementById('stat-domains').textContent   = domainSet.size;
+  document.getElementById('stat-unmatched').textContent = unmatched.length.toLocaleString();
+  document.getElementById('stat-critical').textContent  = critCount.toLocaleString();
+
+  // Rebuild domain/drill indexes
+  domainCounts = {};
+  drillData    = {};
+  d.forEach(r => {
+    if (!r.dom || r.dom === '(No Domain)') return;
+    domainCounts[r.dom] = (domainCounts[r.dom] || 0) + 1;
+    const sd  = r.sd  || '';
+    const div = r.div || '';
+    if (!drillData[r.dom])        drillData[r.dom]       = {};
+    if (!drillData[r.dom][sd])    drillData[r.dom][sd]   = {};
+    drillData[r.dom][sd][div] = (drillData[r.dom][sd][div] || 0) + 1;
+  });
+
+  // Rebuild unmatched section
+  const unmatchedApps = {};
+  unmatched.forEach(r => { unmatchedApps[r.ap] = (unmatchedApps[r.ap] || 0) + 1; });
+  const unmatchedEntries   = Object.entries(unmatchedApps).sort((a, b) => b[1] - a[1]);
+  const unmatchedTotalJobs = unmatchedEntries.reduce((s, [, c]) => s + c, 0);
+
+  document.getElementById('unmatched-count-badge').textContent =
+    unmatchedEntries.length + ' apps · ' + unmatchedTotalJobs.toLocaleString() + ' jobs';
+  document.getElementById('unmatched-grid').innerHTML =
+    unmatchedEntries.map(([app, count]) =>
+      `<div class="unmatched-item">
+         <span class="unmatched-app">${escHtml(app)}</span>
+         <span class="unmatched-count">${count}</span>
+       </div>`
+    ).join('');
+
+  showDomainView();
+  rebuildTypeChart(d);
+  rebuildITDivChart(d);
+}
+
+// ── Dashboard: plan perspective pills ──
+function setDashPlan(plan) {
+  dashPlan = plan;
+  document.querySelectorAll('.plan-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.plan === plan);
+  });
+  rebuildDashboardData();
+}
+
+const perspBar   = document.getElementById('perspective-bar');
+const allPill    = document.createElement('button');
+allPill.className    = 'plan-pill active';
+allPill.dataset.plan = '';
+allPill.textContent  = 'All Plans';
+allPill.onclick      = () => setDashPlan('');
+perspBar.appendChild(allPill);
+
+[...new Set(DATA.map(r => r.pl || ''))].filter(Boolean).sort().forEach(plan => {
+  const pill        = document.createElement('button');
+  pill.className    = 'plan-pill';
+  pill.dataset.plan = plan;
+  pill.textContent  = plan;
+  pill.onclick      = () => setDashPlan(plan);
+  perspBar.appendChild(pill);
+});
+
+// ── Domain drill-down ──
+const domainColors = [
+  '#2563eb','#3b82f6','#60a5fa','#93c5fd',
+  '#10b981','#34d399','#6ee7b7',
+  '#f59e0b','#fbbf24','#fcd34d',
+  '#ef4444','#f87171','#fca5a5',
+  '#8b5cf6','#a78bfa',
+];
+
+let domainChartInst = null;
+let drillState      = { level: 0, domain: null, subDomain: null };
+
+function getDomainEntries() {
+  return Object.entries(domainCounts).sort((a, b) => b[1] - a[1]);
+}
+
+function getSubDomainEntries(domain) {
+  return Object.entries(drillData[domain] || {})
+    .map(([k, divs]) => [k, Object.values(divs).reduce((a, b) => a + b, 0)])
+    .sort((a, b) => b[1] - a[1]);
+}
+
+function getITDivEntries(domain, subDomain) {
+  return Object.entries((drillData[domain] || {})[subDomain] || {})
+    .sort((a, b) => b[1] - a[1]);
+}
+
+function updateBreadcrumb() {
+  const bc       = document.getElementById('domain-breadcrumb');
+  const back     = document.getElementById('drill-back-btn');
+  const viewJobs = document.getElementById('view-jobs-btn');
+  const title    = document.getElementById('domain-chart-title');
+
+  if (drillState.level === 0) {
+    bc.style.display       = 'none';
+    back.style.display     = 'none';
+    viewJobs.style.display = 'none';
+    title.textContent      = 'Jobs by Domain';
+  } else if (drillState.level === 1) {
+    bc.style.display       = 'flex';
+    bc.innerHTML = `<span class="bc-link" onclick="drillBack()">All Domains</span><span class="bc-sep">›</span><span class="bc-active">${escHtml(stripPrefix(drillState.domain))}</span>`;
+    back.style.display     = 'inline-flex';
+    viewJobs.style.display = 'inline-flex';
+    title.textContent      = 'Jobs by Sub-Domain';
+  } else {
+    bc.style.display       = 'flex';
+    bc.innerHTML = `<span class="bc-link" onclick="drillToTop()">All Domains</span><span class="bc-sep">›</span><span class="bc-link" onclick="drillBack()">${escHtml(stripPrefix(drillState.domain))}</span><span class="bc-sep">›</span><span class="bc-active">${escHtml(stripPrefix(drillState.subDomain))}</span>`;
+    back.style.display     = 'inline-flex';
+    viewJobs.style.display = 'inline-flex';
+    title.textContent      = 'Jobs by IT Division';
+  }
+}
+
+function viewJobsFromDrill() {
+  navigateToJobs(drillState.domain, drillState.subDomain);
+}
+
+function navigateToJobs(domain, subDomain) {
+  // Set domain
+  const domainSel = document.getElementById('domain-filter');
+  domainSel.value = domain || '';
+  domainFilter    = domain || '';
+
+  // Rebuild sub-domain dropdown for this domain
+  populateSubdomainDropdown(domain || '');
+  const sdSel = document.getElementById('subdomain-filter');
+  sdSel.value = subDomain || '';
+  sdFilter    = subDomain || '';
+
+  // Carry dashboard plan perspective into jobs tab
+  if (dashPlan) {
+    document.getElementById('plan-filter').value = dashPlan;
+    planFilter = dashPlan;
+  }
+
+  // Switch to jobs tab
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelector('[data-tab="jobs"]').classList.add('active');
+  document.getElementById('tab-jobs').classList.add('active');
+
+  currentPage = 1;
+  applyFilters();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function renderDrillChart(entries, labelFn, onClickFn) {
+  const canvas  = document.getElementById('domainChart');
+  const wrapper = document.getElementById('domain-chart-wrapper');
+  const height  = Math.max(200, Math.min(entries.length * 36 + 48, 520));
+  wrapper.style.height = height + 'px';
+  canvas.style.cursor  = onClickFn ? 'pointer' : 'default';
+
+  if (domainChartInst) domainChartInst.destroy();
+
+  domainChartInst = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: entries.map(([k]) => labelFn(k)),
+      datasets: [{
+        label: 'Jobs',
+        data:  entries.map(([, v]) => v),
+        backgroundColor: entries.map((_, i) => domainColors[i % domainColors.length]),
+        borderRadius: 4,
+        borderSkipped: false,
+      }],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      onClick: onClickFn ? (evt, els) => {
+        if (els.length > 0) onClickFn(entries[els[0].index][0]);
+      } : undefined,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.x.toLocaleString() + ' jobs' } },
+      },
+      scales: {
+        x: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+        y: { grid: { display: false }, ticks: { font: { size: 11 } } },
+      },
+    },
+  });
+}
+
+function showDomainView() {
+  drillState = { level: 0, domain: null, subDomain: null };
+  updateBreadcrumb();
+  renderDrillChart(getDomainEntries(), d => stripPrefix(d), domain => {
+    drillState = { level: 1, domain, subDomain: null };
+    showSubDomainView();
+  });
+}
+
+function showSubDomainView() {
+  updateBreadcrumb();
+  const entries = getSubDomainEntries(drillState.domain);
+  renderDrillChart(entries, sd => stripPrefix(sd) || '(No Sub-Domain)', subDomain => {
+    drillState.level     = 2;
+    drillState.subDomain = subDomain;
+    showITDivView();
+  });
+}
+
+function showITDivView() {
+  updateBreadcrumb();
+  renderDrillChart(
+    getITDivEntries(drillState.domain, drillState.subDomain),
+    div => div || '(No Division)',
+    () => navigateToJobs(drillState.domain, drillState.subDomain)
+  );
+}
+
+function drillBack() {
+  if (drillState.level === 2) {
+    drillState.level     = 1;
+    drillState.subDomain = null;
+    showSubDomainView();
+  } else {
+    showDomainView();
+  }
+}
+
+function drillToTop() { showDomainView(); }
+
+// ── Application type chart ──
+let typeChartInst = null;
+
+function rebuildTypeChart(d) {
+  const typeCounts = {};
+  d.forEach(r => {
+    const t = r.at || '(None)';
+    typeCounts[t] = (typeCounts[t] || 0) + 1;
+  });
+  const typeEntries = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
+
+  if (typeChartInst) typeChartInst.destroy();
+  typeChartInst = new Chart(document.getElementById('typeChart'), {
+    type: 'doughnut',
+    data: {
+      labels: typeEntries.map(([t]) => t),
+      datasets: [{
+        data: typeEntries.map(([, v]) => v),
+        backgroundColor: ['#2563eb','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#64748b'],
+        borderWidth: 2,
+        borderColor: '#ffffff',
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { font: { size: 11 }, padding: 12, usePointStyle: true },
+        },
+        tooltip: { callbacks: { label: ctx => ' ' + ctx.label + ': ' + ctx.parsed.toLocaleString() } },
+      },
+    },
+  });
+}
+
+// ── IT Division chart ──
+let itDivChartInst = null;
+
+function rebuildITDivChart(d) {
+  const counts = {};
+  d.forEach(r => {
+    const div = r.div || '';
+    if (!div) return;
+    counts[div] = (counts[div] || 0) + 1;
+  });
+  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+
+  document.getElementById('itdiv-count-badge').textContent =
+    entries.length + ' division' + (entries.length !== 1 ? 's' : '');
+
+  const wrapper = document.getElementById('itdiv-chart-wrapper');
+  const height  = Math.max(200, Math.min(entries.length * 32 + 48, 640));
+  wrapper.style.height = height + 'px';
+
+  if (itDivChartInst) itDivChartInst.destroy();
+  const canvas = document.getElementById('itDivChart');
+  canvas.style.cursor = 'pointer';
+
+  itDivChartInst = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: entries.map(([k]) => k),
+      datasets: [{
+        label: 'Jobs',
+        data: entries.map(([, v]) => v),
+        backgroundColor: entries.map((_, i) => domainColors[i % domainColors.length]),
+        borderRadius: 4,
+        borderSkipped: false,
+      }],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      onClick: (evt, els) => {
+        if (els.length > 0) navigateToJobsByITDiv(entries[els[0].index][0]);
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.x.toLocaleString() + ' jobs' } },
+      },
+      scales: {
+        x: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+        y: { grid: { display: false }, ticks: { font: { size: 11 } } },
+      },
+    },
+  });
+}
+
+function navigateToJobsByITDiv(div) {
+  const sel   = document.getElementById('itdiv-filter');
+  sel.value   = div;
+  itDivFilter = div;
+
+  if (dashPlan) {
+    document.getElementById('plan-filter').value = dashPlan;
+    planFilter = dashPlan;
+  }
+
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelector('[data-tab="jobs"]').classList.add('active');
+  document.getElementById('tab-jobs').classList.add('active');
+
+  currentPage = 1;
+  applyFilters();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Initial dashboard render ──
+rebuildDashboardData();
+
+// ── Tab switching ──
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ── Populate Jobs tab dropdowns ──
+// Domain: exclude empty and (No Domain)
+const domainSelect = document.getElementById('domain-filter');
+[...new Set(DATA.map(r => r.dom))].filter(d => d && d !== '(No Domain)').sort().forEach(d => {
+  const opt = document.createElement('option');
+  opt.value       = d;
+  opt.textContent = stripPrefix(d);
+  domainSelect.appendChild(opt);
+});
+
+function populateSubdomainDropdown(forDomain) {
+  const sdSelect = document.getElementById('subdomain-filter');
+  if (!forDomain) {
+    sdSelect.innerHTML = '<option value="">Select a domain first</option>';
+    sdSelect.disabled  = true;
+    return;
+  }
+  sdSelect.disabled  = false;
+  sdSelect.innerHTML = '<option value="">All Sub-Domains</option>';
+  [...new Set(DATA.filter(r => r.dom === forDomain).map(r => r.sd))]
+    .filter(Boolean)
+    .sort()
+    .forEach(sd => {
+      const opt = document.createElement('option');
+      opt.value       = sd;
+      opt.textContent = stripPrefix(sd);
+      sdSelect.appendChild(opt);
+    });
+}
+
+// IT Division
+[...new Set(DATA.map(r => r.div || ''))].filter(Boolean).sort().forEach(d => {
+  const opt = document.createElement('option');
+  opt.value       = d;
+  opt.textContent = d;
+  document.getElementById('itdiv-filter').appendChild(opt);
+});
+
+// Appl type
+[...new Set(DATA.map(r => r.at))].sort().forEach(t => {
+  const opt = document.createElement('option');
+  opt.value       = t;
+  opt.textContent = t || '(None)';
+  document.getElementById('appltype-filter').appendChild(opt);
+});
+
+// App plan
+[...new Set(DATA.map(r => r.pl || ''))].filter(Boolean).sort().forEach(p => {
+  const opt = document.createElement('option');
+  opt.value       = p;
+  opt.textContent = p;
+  document.getElementById('plan-filter').appendChild(opt);
+});
+
+// ── Jobs table header ──
+const thead = document.getElementById('jobs-thead');
+thead.innerHTML = COLUMNS.map(col =>
+  `<th class="sortable" data-col="${col.key}">${col.label}</th>`
+).join('');
+
+thead.querySelectorAll('th').forEach(th => {
+  th.addEventListener('click', () => {
+    const col = th.dataset.col;
+    sortDir = (sortCol === col && sortDir === 'asc') ? 'desc' : 'asc';
+    sortCol = col;
+    thead.querySelectorAll('th').forEach(h => h.className = 'sortable');
+    th.className = `sortable sort-${sortDir}`;
+    currentPage  = 1;
+    applyFilters();
+  });
+});
+
+// ── Filter event listeners ──
+let searchTimer;
+document.getElementById('search-input').addEventListener('input', e => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    searchQuery = e.target.value.toLowerCase();
+    currentPage = 1;
+    applyFilters();
+  }, 250);
+});
+
+document.getElementById('domain-filter').addEventListener('change', e => {
+  domainFilter = e.target.value;
+  sdFilter     = '';
+  currentPage  = 1;
+  populateSubdomainDropdown(domainFilter);
+  applyFilters();
+});
+
+document.getElementById('subdomain-filter').addEventListener('change', e => {
+  sdFilter    = e.target.value;
+  currentPage = 1;
+  applyFilters();
+});
+
+document.getElementById('itdiv-filter').addEventListener('change', e => {
+  itDivFilter = e.target.value;
+  currentPage = 1;
+  applyFilters();
+});
+
+document.getElementById('appltype-filter').addEventListener('change', e => {
+  typeFilter  = e.target.value;
+  currentPage = 1;
+  applyFilters();
+});
+
+document.getElementById('plan-filter').addEventListener('change', e => {
+  planFilter  = e.target.value;
+  currentPage = 1;
+  applyFilters();
+});
+
+document.getElementById('critical-filter').addEventListener('change', e => {
+  critFilter  = e.target.value;
+  currentPage = 1;
+  applyFilters();
+});
+
+// ── Core filter & sort ──
+function applyFilters() {
+  filteredData = DATA.filter(row => {
+    if (domainFilter && row.dom  !== domainFilter)           return false;
+    if (sdFilter     && row.sd   !== sdFilter)               return false;
+    if (itDivFilter  && (row.div || '') !== itDivFilter)     return false;
+    if (typeFilter   && row.at   !== typeFilter)             return false;
+    if (planFilter   && (row.pl || '') !== planFilter) return false;
+    if (critFilter   && row.cr  !== critFilter)        return false;
+    if (searchQuery) {
+      const hay = COLUMNS.map(c => (row[c.key] || '').toLowerCase()).join('\x00');
+      if (!hay.includes(searchQuery)) return false;
+    }
+    return true;
+  });
+
+  if (sortCol) {
+    filteredData = [...filteredData].sort((a, b) => {
+      const av  = (a[sortCol] || '').toLowerCase();
+      const bv  = (b[sortCol] || '').toLowerCase();
+      const cmp = av.localeCompare(bv);
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+  }
+
+  const total = filteredData.length;
+  document.getElementById('result-info').textContent =
+    total.toLocaleString() + ' record' + (total !== 1 ? 's' : '');
+  document.getElementById('jobs-badge').textContent = total.toLocaleString();
+
+  renderTable();
+  renderPagination();
+}
+
+function renderTable() {
+  const tbody = document.getElementById('jobs-tbody');
+  const empty = document.getElementById('empty-state');
+  const start = (currentPage - 1) * pageSize;
+  const slice = filteredData.slice(start, start + pageSize);
+
+  if (slice.length === 0) {
+    tbody.innerHTML     = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = slice.map(row => {
+    const domDisplay = stripPrefix(row.dom) || '<span style="color:#94a3b8">—</span>';
+    const appCode    = row.ac
+      ? `<span class="badge badge-blue">${escHtml(row.ac)}</span>`
+      : '<span class="no-app-code">—</span>';
+
+    return `<tr>
+      <td class="job-name" title="${escHtml(row.jn)}">${escHtml(row.jn) || '—'}</td>
+      <td title="${escHtml(row.fo)}">${escHtml(row.fo) || '—'}</td>
+      <td title="${escHtml(row.ap)}">${escHtml(row.ap) || '—'}</td>
+      <td title="${escHtml(row.sa)}">${escHtml(row.sa) || '—'}</td>
+      <td title="${escHtml(row.dom)}">${domDisplay}</td>
+      <td>${appCode}</td>
+      <td title="${escHtml(row.div)}">${escHtml(row.div) || '—'}</td>
+      <td>${applTypeBadge(row.at)}</td>
+      <td>${planBadge(row.pl)}</td>
+      <td>${escHtml(row.tt) || '—'}</td>
+      <td>${critBadge(row.cr)}</td>
+      <td>${escHtml(row.pr) || '—'}</td>
+      <td>${escHtml(row.cl) || '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderPagination() {
+  const total      = filteredData.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const pag        = document.getElementById('pagination');
+
+  const btn = (label, page, active = false, disabled = false) =>
+    `<button class="pag-btn${active ? ' active' : ''}" ${disabled ? 'disabled' : ''}
+      onclick="goPage(${page})">${label}</button>`;
+
+  let pages;
+  if (totalPages <= 7) {
+    pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+  } else if (currentPage <= 4) {
+    pages = [1, 2, 3, 4, 5, '…', totalPages];
+  } else if (currentPage >= totalPages - 3) {
+    pages = [1, '…', totalPages-4, totalPages-3, totalPages-2, totalPages-1, totalPages];
+  } else {
+    pages = [1, '…', currentPage-1, currentPage, currentPage+1, '…', totalPages];
+  }
+
+  let html = btn('‹', currentPage - 1, false, currentPage === 1);
+  pages.forEach(p => {
+    html += p === '…'
+      ? `<span class="pag-ellipsis">…</span>`
+      : btn(p, p, p === currentPage);
+  });
+  html += btn('›', currentPage + 1, false, currentPage === totalPages);
+
+  html += `<div class="pag-right">
+    <span style="font-size:0.8125rem;color:var(--text-muted)">
+      ${((currentPage-1)*pageSize+1).toLocaleString()}–${Math.min(currentPage*pageSize, total).toLocaleString()} of ${total.toLocaleString()}
+    </span>
+    <select class="pag-size-select" onchange="changePageSize(+this.value)">
+      ${[20,50,100].map(s => `<option value="${s}"${s===pageSize?' selected':''}>${s} / page</option>`).join('')}
+    </select>
+  </div>`;
+
+  pag.innerHTML = html;
+}
+
+function goPage(p) {
+  const totalPages = Math.ceil(filteredData.length / pageSize);
+  if (p < 1 || p > totalPages) return;
+  currentPage = p;
+  renderTable();
+  renderPagination();
+  document.querySelector('.section-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function changePageSize(size) {
+  pageSize    = size;
+  currentPage = 1;
+  applyFilters();
+}
+
+// ── Initial render ──
+applyFilters();
+</script>
+</body>
+</html>
