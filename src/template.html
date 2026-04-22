@@ -870,25 +870,38 @@ function viewJobsFromDrill() {
   navigateToJobs(drillState.domain, drillState.subDomain);
 }
 
+function resetAllJobFilters() {
+  searchQuery = '';
+  domainFilter = '';
+  sdFilter = '';
+  itDivFilter = '';
+  typeFilter = '';
+  planFilter = '';
+  critFilter = '';
+  document.getElementById('search-input').value = '';
+  document.getElementById('domain-filter').value = '';
+  populateSubdomainDropdown('');
+  document.getElementById('subdomain-filter').value = '';
+  document.getElementById('itdiv-filter').value = '';
+  document.getElementById('appltype-filter').value = '';
+  document.getElementById('plan-filter').value = '';
+  document.getElementById('critical-filter').value = '';
+}
+
 function navigateToJobs(domain, subDomain) {
-  // Set domain
-  const domainSel = document.getElementById('domain-filter');
-  domainSel.value = domain || '';
-  domainFilter    = domain || '';
+  resetAllJobFilters();
 
-  // Rebuild sub-domain dropdown for this domain
-  populateSubdomainDropdown(domain || '');
-  const sdSel = document.getElementById('subdomain-filter');
-  sdSel.value = subDomain || '';
-  sdFilter    = subDomain || '';
+  domainFilter = domain || '';
+  document.getElementById('domain-filter').value = domainFilter;
+  populateSubdomainDropdown(domainFilter);
+  sdFilter = subDomain || '';
+  document.getElementById('subdomain-filter').value = sdFilter;
 
-  // Carry dashboard plan perspective into jobs tab
   if (dashPlan) {
-    document.getElementById('plan-filter').value = dashPlan;
     planFilter = dashPlan;
+    document.getElementById('plan-filter').value = dashPlan;
   }
 
-  // Switch to jobs tab
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   document.querySelector('[data-tab="jobs"]').classList.add('active');
@@ -1071,13 +1084,14 @@ function rebuildITDivChart(d) {
 }
 
 function navigateToJobsByITDiv(div) {
-  const sel   = document.getElementById('itdiv-filter');
-  sel.value   = div;
+  resetAllJobFilters();
+
   itDivFilter = div;
+  document.getElementById('itdiv-filter').value = div;
 
   if (dashPlan) {
-    document.getElementById('plan-filter').value = dashPlan;
     planFilter = dashPlan;
+    document.getElementById('plan-filter').value = dashPlan;
   }
 
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -1193,18 +1207,18 @@ function rebuildPlanStackedChart() {
 }
 
 function navigateToJobsByPlan(perspVal, plan) {
+  resetAllJobFilters();
+
   if (planPerspective === 'domain') {
-    document.getElementById('domain-filter').value = perspVal;
     domainFilter = perspVal;
+    document.getElementById('domain-filter').value = perspVal;
     populateSubdomainDropdown(perspVal);
-    sdFilter = '';
-    document.getElementById('subdomain-filter').value = '';
   } else {
-    document.getElementById('itdiv-filter').value = perspVal;
     itDivFilter = perspVal;
+    document.getElementById('itdiv-filter').value = perspVal;
   }
-  document.getElementById('plan-filter').value = plan;
   planFilter = plan;
+  document.getElementById('plan-filter').value = plan;
 
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
