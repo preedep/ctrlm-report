@@ -213,3 +213,16 @@ cargo fmt                      # auto-format
     - Each domain block has `id="eal-d{index}"` and `data-eal-dom` attribute for scroll spy targeting
     - Layout uses `.eal-body` (flex row): `.eal-sidenav` (sticky nav) + `.eal-content` (landscape, `flex:1`)
     - Section-card uses `overflow:clip` (not `overflow:hidden`) so `position:sticky` works — `clip` preserves rounded-corner clipping without creating a scroll container
+  - **Perspective toggle**: toggle button group in the EA Landscape page header — "By Domain" and "By IT Division"
+    - `let ealPerspective = 'domain'`; `setEALPerspective(persp)` updates active button, updates subtitle text (`#eal-subtitle`), and calls `buildEALandscape()`
+    - Subtitle text changes with perspective: "Application portfolio — Domain → Sub-Domain → IT Division" / "Application portfolio — IT Division → Domain → App"
+    - **By Domain** (default): Domain → Sub-Domain columns → IT Division rows → App cards (same as original view)
+    - **By IT Division**: flipped view — IT Division block → Domain columns → App cards
+      - `buildEALByITDiv(appRegistry, domainColorMap)`: groups `appRegistry` by `div → dom → [apps]`
+      - IT division blocks sorted by app count descending; `'Other'` (empty `app_port_it_division`) always last
+      - Side nav header changes to "IT Divisions"; nav items show division label + app count
+      - Each IT division block shows: division name, `N domains` meta, Criticality + App Plan summary pills
+      - Domain columns inside each IT div block use the same `domainColorMap` colors as the By Domain view for visual consistency
+      - App cards identical to By Domain view — same click-to-jobs, filter, dim behavior
+    - `domainColorMap` is built in `buildEALandscape()` (sorted by domain app count) and passed to `buildEALByITDiv()` to ensure consistent domain colors across both perspectives
+    - `setupEALScrollSpy()` is called at the end of both `buildEALandscape()` and `buildEALByITDiv()` to wire up the scroll spy after any rebuild
