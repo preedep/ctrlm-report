@@ -480,7 +480,7 @@
     .eal-domain-meta { font-size:0.67rem; color:var(--text-muted); margin-top:2px; }
     .eal-domain-badge { font-size:0.7rem; font-weight:700; padding:3px 12px; border-radius:9999px; white-space:nowrap; flex-shrink:0; }
 
-    .eal-sd-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(256px,1fr)); background:var(--border); gap:1px; }
+    .eal-sd-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(256px,1fr)); background:var(--border); gap:1px; }
     .eal-sd-col { background:#fff; padding:1rem 1.125rem; display:flex; flex-direction:column; gap:0.875rem; }
     .eal-sd-hdr { display:flex; justify-content:space-between; align-items:baseline; gap:0.5rem; padding-bottom:0.5rem; border-bottom:2px solid currentColor; }
     .eal-sd-name { font-size:0.78rem; font-weight:700; color:var(--text); line-height:1.3; }
@@ -625,6 +625,7 @@
           <div class="eal-persp-toggle">
             <button class="eal-persp-btn active" data-persp="domain" onclick="setEALPerspective('domain')">By Domain</button>
             <button class="eal-persp-btn" data-persp="itdiv" onclick="setEALPerspective('itdiv')">By IT Division</button>
+            <button class="eal-persp-btn" data-persp="layer" onclick="setEALPerspective('layer')">By Layer</button>
           </div>
           <div class="eal-stats-bar">
             <div class="eal-stat-pill"><b id="ea-stat-apps">—</b>&nbsp;apps</div>
@@ -1580,6 +1581,8 @@ function setEALPerspective(persp) {
   const sub = document.getElementById('eal-subtitle');
   if (sub) sub.textContent = persp === 'itdiv'
     ? 'Application portfolio — IT Division → Domain → App'
+    : persp === 'layer'
+    ? 'Application portfolio — Layer → Domain → App'
     : 'Application portfolio — Domain → Sub-Domain → IT Division';
   buildEALandscape();
 }
@@ -1646,7 +1649,7 @@ function buildEALandscape() {
   const appRegistry = {};
   APP_DATA.forEach(r => {
     if (!r.ac || appRegistry[r.ac]) return;
-    appRegistry[r.ac] = { ac: r.ac, ai: r.ai || '', dom: r.dom || '', sd: r.sd || '', div: r.div || '', cl: r.cl || '', pl: r.pl || '' };
+    appRegistry[r.ac] = { ac: r.ac, ai: r.ai || '', dom: r.dom || '', sd: r.sd || '', div: r.div || '', cl: r.cl || '', pl: r.pl || '', la: r.la || '' };
   });
 
   // Group: landscape[dom][sd][div] = [app, ...]
@@ -1660,15 +1663,18 @@ function buildEALandscape() {
     landscape[app.dom][app.sd][div].push(app);
   });
 
-  // Sort domains by app count descending; build consistent color map
+  // Sort domains by app count descending; build consistent color map covering ALL domains in registry
   const domAppCount = {};
   Object.keys(landscape).forEach(dom => {
     domAppCount[dom] = Object.values(landscape[dom])
       .reduce((s, sds) => s + Object.values(sds).reduce((ss, a) => ss + a.length, 0), 0);
   });
   const domains = Object.keys(landscape).sort((a, b) => domAppCount[b] - domAppCount[a]);
+  // Include any domains present in appRegistry but absent from landscape (e.g. "(No Domain)" entries)
+  const allRegistryDomains = [...new Set(Object.values(appRegistry).map(a => a.dom).filter(Boolean))];
+  const extraDomains = allRegistryDomains.filter(d => !domAppCount[d]);
   const domainColorMap = {};
-  domains.forEach((dom, di) => { domainColorMap[dom] = domainColors[di % domainColors.length]; });
+  [...domains, ...extraDomains].forEach((dom, di) => { domainColorMap[dom] = domainColors[di % domainColors.length]; });
 
   // Update stat pills
   const totalApps = Object.keys(appRegistry).length;
@@ -1680,6 +1686,10 @@ function buildEALandscape() {
   // Branch to the appropriate view
   if (ealPerspective === 'itdiv') {
     buildEALByITDiv(appRegistry, domainColorMap);
+    return;
+  }
+  if (ealPerspective === 'layer') {
+    buildEALByLayer(appRegistry, domainColorMap);
     return;
   }
 
@@ -1831,6 +1841,109 @@ function buildEALByITDiv(appRegistry, domainColorMap) {
     html += `<div class="eal-sd-grid">`;
     domKeys.forEach(dom => {
       const apps     = itDivMap[div][dom].slice().sort((a, b) => a.ac.localeCompare(b.ac));
+      const domColor = domainColorMap[dom] || '#94a3b8';
+      const domLabel = stripPrefix(dom) || '(No Domain)';
+
+      html += `<div class="eal-sd-col">`;
+      html += `<div class="eal-sd-hdr" style="color:${domColor};border-bottom-color:${domColor}">`;
+      html += `<span class="eal-sd-name">${escHtml(domLabel)}</span>`;
+      html += `<span class="eal-sd-count">${apps.length} app${apps.length !== 1 ? 's' : ''}</span>`;
+      html += `</div>`;
+      html += `<div class="eal-app-grid">`;
+      apps.forEach(app => { html += ealAppCardHtml(app); });
+      html += `</div></div>`;
+    });
+    html += `</div></div>`;
+  });
+
+  html += '</div>';
+  document.getElementById('ea-matrix-wrap').innerHTML = html;
+  setupEALScrollSpy();
+}
+
+const EAL_LAYER_ORDER = ['channel', 'processing', 'product', 'data', 'enterprise support', 'technology foundation'];
+const EAL_LAYER_LABEL = {
+  'channel':              'Channel',
+  'processing':           'Processing',
+  'product':              'Product',
+  'data':                 'Data',
+  'enterprise support':   'Enterprise Support',
+  'technology foundation':'Technology Foundation',
+};
+const EAL_LAYER_COLOR = {
+  'channel':              '#2563eb',
+  'processing':           '#8b5cf6',
+  'product':              '#10b981',
+  'data':                 '#f59e0b',
+  'enterprise support':   '#ec4899',
+  'technology foundation':'#64748b',
+};
+
+function buildEALByLayer(appRegistry, domainColorMap) {
+  // Group by layer (normalised lowercase) → domain → [apps]
+  const layerMap = {};
+  Object.values(appRegistry).forEach(app => {
+    const lk  = (app.la || '').toLowerCase().trim() || 'other';
+    const dom = app.dom || '';
+    layerMap[lk]      ??= {};
+    layerMap[lk][dom] ??= [];
+    layerMap[lk][dom].push(app);
+  });
+
+  // Layer order: known layers first (in prescribed order), unknowns / 'other' last
+  const knownKeys = EAL_LAYER_ORDER.filter(k => layerMap[k]);
+  const otherKeys = Object.keys(layerMap).filter(k => !EAL_LAYER_ORDER.includes(k)).sort();
+  const layerKeys = [...knownKeys, ...otherKeys];
+
+  const layerCounts = {};
+  layerKeys.forEach(k => {
+    layerCounts[k] = Object.values(layerMap[k]).reduce((s, a) => s + a.length, 0);
+  });
+
+  // Side nav
+  let navHtml = `<div class="eal-nav-hdr">Layers</div>`;
+  layerKeys.forEach((lk, li) => {
+    const color = EAL_LAYER_COLOR[lk] || '#94a3b8';
+    const label = EAL_LAYER_LABEL[lk] || (lk.charAt(0).toUpperCase() + lk.slice(1));
+    navHtml += `<div class="eal-nav-item" data-id="eal-d${li}" onclick="ealNavJump('eal-d${li}')">`;
+    navHtml += `<span class="eal-nav-dot" style="background:${color}"></span>`;
+    navHtml += `<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(label)}</span>`;
+    navHtml += `<span class="eal-nav-count">${layerCounts[lk]}</span>`;
+    navHtml += `</div>`;
+  });
+  document.getElementById('eal-nav').innerHTML = navHtml;
+
+  let html = '<div class="eal-root">';
+
+  layerKeys.forEach((lk, li) => {
+    const color    = EAL_LAYER_COLOR[lk] || '#94a3b8';
+    const label    = EAL_LAYER_LABEL[lk] || (lk.charAt(0).toUpperCase() + lk.slice(1));
+    const allApps  = Object.values(layerMap[lk]).flat();
+    const domKeys  = Object.keys(layerMap[lk]).filter(d => d).sort();
+    const appCount = layerCounts[lk];
+    const meta     = `${domKeys.length} domain${domKeys.length !== 1 ? 's' : ''}`;
+
+    const clCounts = {}, plCounts = {};
+    allApps.forEach(app => {
+      if (app.cl) clCounts[app.cl] = (clCounts[app.cl] || 0) + 1;
+      const plKey = (app.pl || 'no plan').toLowerCase();
+      plCounts[plKey] = (plCounts[plKey] || 0) + 1;
+    });
+
+    html += `<div class="eal-domain" id="eal-d${li}" data-eal-dom>`;
+    html += `<div class="eal-domain-hdr" style="border-left-color:${color};background:${color}14">`;
+    html += `<div class="eal-domain-title">`;
+    html += `<div class="eal-domain-name">${escHtml(label)}</div>`;
+    html += `<div class="eal-domain-meta">${escHtml(meta)}</div>`;
+    html += ealSummaryPillsHtml(clCounts, plCounts, `eal-d${li}`);
+    html += `</div>`;
+    html += `<span class="eal-domain-badge" style="background:${color}20;color:${color}">${appCount.toLocaleString()} app${appCount !== 1 ? 's' : ''}</span>`;
+    html += `</div>`;
+
+    // Domain columns
+    html += `<div class="eal-sd-grid">`;
+    domKeys.forEach(dom => {
+      const apps     = layerMap[lk][dom].slice().sort((a, b) => a.ac.localeCompare(b.ac));
       const domColor = domainColorMap[dom] || '#94a3b8';
       const domLabel = stripPrefix(dom) || '(No Domain)';
 

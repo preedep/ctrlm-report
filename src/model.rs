@@ -20,6 +20,8 @@ pub struct AppInventory {
     pub app_port_org_code: String,
     #[serde(default)]
     pub app_port_sub_domain: String,
+    #[serde(default)]
+    pub app_port_layer: String,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

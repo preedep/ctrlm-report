@@ -56,6 +56,7 @@ cargo run -- -i path/to/data.json -a path/to/inventory.json -o out.html  # custo
     "app_port_it_division": "Deposit Products" // under what it division,
     "app_port_org_code": "5100" // under what organization code,
     "app_port_revised_to_sub_domain": "" ,
+    "app_port_layer": "Product" , //under what application layer ex. channel , data provider 
     "app_port_sub_domain": "3.1 Current & Savings Accounts" // under what sub domain,
     "control_m_appl_type": "FILE_TRANS" //control-m information appl type is file transfer,
     "control_m_appl_ver": "6.1.01" //control-m agent version,
@@ -89,7 +90,8 @@ Full application portfolio — one entry per application, independent of Control
     "app_port_domain": "3.Deposits & Core Banking" //under what domain name of this application , when render ignore number bullet,
     "app_port_it_division": "Deposit Products" // under what it division,
     "app_port_org_code": "5100" // under what organization code,
-    "app_port_sub_domain": "3.1 Current & Savings Accounts" // under what sub domain,
+    "app_port_sub_domain": "3.1 Current & Savings Accounts" , // under what sub domain,
+     "app_port_layer": "Product" //under what application layer ex. channel , data provider 
   },
 ```
 
@@ -101,7 +103,7 @@ Full application portfolio — one entry per application, independent of Control
 - No `unwrap`/`expect` in non-test code — propagate errors explicitly.
 - Derive `Debug` on all public types.
 - `ReportJob` uses short serde rename keys (`jn`, `fo`, `ap`, …) to reduce embedded JSON payload size.
-- `ReportAppItem` uses short serde rename keys (`ac`, `ai`, `pl`, `cat`, `cl`, `dom`, `div`, `oc`, `sd`) — same key conventions as `ReportJob` where fields overlap.
+- `ReportAppItem` uses short serde rename keys (`ac`, `ai`, `pl`, `cat`, `cl`, `dom`, `div`, `oc`, `sd`, `la`) — same key conventions as `ReportJob` where fields overlap.
 - Two template placeholders: `__DATA__` → Control-M jobs (`DATA` in JS); `__APP_DATA__` → app portfolio (`APP_DATA` in JS).
 
 ## Build / Test / Run
@@ -213,9 +215,9 @@ cargo fmt                      # auto-format
     - Each domain block has `id="eal-d{index}"` and `data-eal-dom` attribute for scroll spy targeting
     - Layout uses `.eal-body` (flex row): `.eal-sidenav` (sticky nav) + `.eal-content` (landscape, `flex:1`)
     - Section-card uses `overflow:clip` (not `overflow:hidden`) so `position:sticky` works — `clip` preserves rounded-corner clipping without creating a scroll container
-  - **Perspective toggle**: toggle button group in the EA Landscape page header — "By Domain" and "By IT Division"
+  - **Perspective toggle**: toggle button group in the EA Landscape page header — "By Domain", "By IT Division", "By Layer"
     - `let ealPerspective = 'domain'`; `setEALPerspective(persp)` updates active button, updates subtitle text (`#eal-subtitle`), and calls `buildEALandscape()`
-    - Subtitle text changes with perspective: "Application portfolio — Domain → Sub-Domain → IT Division" / "Application portfolio — IT Division → Domain → App"
+    - Subtitle text changes with perspective: "Application portfolio — Domain → Sub-Domain → IT Division" / "Application portfolio — IT Division → Domain → App" / "Application portfolio — Layer → Domain → App"
     - **By Domain** (default): Domain → Sub-Domain columns → IT Division rows → App cards (same as original view)
     - **By IT Division**: flipped view — IT Division block → Domain columns → App cards
       - `buildEALByITDiv(appRegistry, domainColorMap)`: groups `appRegistry` by `div → dom → [apps]`
@@ -224,5 +226,13 @@ cargo fmt                      # auto-format
       - Each IT division block shows: division name, `N domains` meta, Criticality + App Plan summary pills
       - Domain columns inside each IT div block use the same `domainColorMap` colors as the By Domain view for visual consistency
       - App cards identical to By Domain view — same click-to-jobs, filter, dim behavior
-    - `domainColorMap` is built in `buildEALandscape()` (sorted by domain app count) and passed to `buildEALByITDiv()` to ensure consistent domain colors across both perspectives
-    - `setupEALScrollSpy()` is called at the end of both `buildEALandscape()` and `buildEALByITDiv()` to wire up the scroll spy after any rebuild
+    - **By Layer**: Layer block → Domain columns → App cards
+      - `buildEALByLayer(appRegistry, domainColorMap)`: groups `appRegistry` by `la` (app_port_layer, normalised lowercase) → dom → [apps]
+      - Layer order (top→down): Channel, Processing, Product, Data, Enterprise Support, Technology Foundation; unknown/empty layers follow sorted alphabetically
+      - `EAL_LAYER_ORDER`, `EAL_LAYER_LABEL`, `EAL_LAYER_COLOR` constants define order, display name, and fixed accent color per layer
+      - Layer colors: Channel=blue, Processing=purple, Product=green, Data=amber, Enterprise Support=pink, Technology Foundation=slate
+      - Side nav header changes to "Layers"; nav items show layer label + app count
+      - Each layer block shows: layer name, `N domains` meta, Criticality + App Plan summary pills
+      - Domain columns use the same `domainColorMap` colors for visual consistency across all perspectives
+    - `domainColorMap` is built in `buildEALandscape()` (sorted by domain app count) and passed to `buildEALByITDiv()` / `buildEALByLayer()` to ensure consistent domain colors across all perspectives
+    - `setupEALScrollSpy()` is called at the end of `buildEALandscape()`, `buildEALByITDiv()`, and `buildEALByLayer()` to wire up the scroll spy after any rebuild

@@ -85,6 +85,8 @@ struct ReportAppItem<'a> {
     org_code: &'a str,
     #[serde(rename = "sd")]
     sub_domain: &'a str,
+    #[serde(rename = "la")]
+    layer: &'a str,
 }
 
 impl<'a> ReportAppItem<'a> {
@@ -99,6 +101,7 @@ impl<'a> ReportAppItem<'a> {
             it_division: &i.app_port_it_division,
             org_code: &i.app_port_org_code,
             sub_domain: &i.app_port_sub_domain,
+            layer: &i.app_port_layer,
         }
     }
 }
