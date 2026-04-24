@@ -238,11 +238,12 @@ cargo fmt                      # auto-format
     - `let ealPerspective = 'domain'`; `setEALPerspective(persp)` updates active button, updates subtitle text (`#eal-subtitle`), and calls `buildEALandscape()`
     - Subtitle text changes with perspective: "Application portfolio — Domain → Sub-Domain → IT Division" / "Application portfolio — IT Division → Domain → App" / "Application portfolio — Layer → Domain → App"
     - **By Domain** (default): Domain → Sub-Domain columns → IT Division rows → App cards (same as original view)
+      - Domain block header meta line: `N sub-domains · N IT divisions · N CTM jobs` (job total summed across all apps in the domain via `ctrlmJobCount`)
     - **By IT Division**: flipped view — IT Division block → Domain columns → App cards
       - `buildEALByITDiv(appRegistry, domainColorMap)`: groups `appRegistry` by `div → dom → [apps]`
       - IT division blocks sorted by app count descending; `'Other'` (empty `app_port_it_division`) always last
       - Side nav header changes to "IT Divisions"; nav items show division label + app count
-      - Each IT division block shows: division name, `N domains` meta, Criticality + App Plan summary pills
+      - Each IT division block shows: division name, `N domains · N CTM jobs` meta, Criticality + App Plan summary pills
       - Domain columns inside each IT div block use the same `domainColorMap` colors as the By Domain view for visual consistency
       - App cards identical to By Domain view — same click-to-jobs, filter, dim behavior
     - **By Layer**: Layer block → Domain columns → App cards
@@ -251,7 +252,7 @@ cargo fmt                      # auto-format
       - `EAL_LAYER_ORDER`, `EAL_LAYER_LABEL`, `EAL_LAYER_COLOR` constants define order, display name, and fixed accent color per layer
       - Layer colors: Channel=blue, Processing=purple, Product=green, Data=amber, Enterprise Support=pink, Technology Foundation=slate
       - Side nav header changes to "Layers"; nav items show layer label + app count
-      - Each layer block shows: layer name, `N domains` meta, Criticality + App Plan summary pills
+      - Each layer block shows: layer name, `N domains · N CTM jobs` meta, Criticality + App Plan summary pills
       - Domain columns use the same `domainColorMap` colors for visual consistency across all perspectives
     - `domainColorMap` is built in `buildEALandscape()` (sorted by domain app count) and passed to `buildEALByITDiv()` / `buildEALByLayer()` to ensure consistent domain colors across all perspectives
     - `setupEALScrollSpy()` is called at the end of `buildEALandscape()`, `buildEALByITDiv()`, and `buildEALByLayer()` to wire up the scroll spy after any rebuild

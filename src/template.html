@@ -1741,7 +1741,8 @@ function buildEALandscape() {
     const sdKeys   = Object.keys(landscape[dom]);
     const divCount = new Set(sdKeys.flatMap(sd => Object.keys(landscape[dom][sd]))).size;
     const appCount = domAppCount[dom];
-    const meta     = `${sdKeys.length} sub-domain${sdKeys.length !== 1 ? 's' : ''} · ${divCount} IT division${divCount !== 1 ? 's' : ''}`;
+    const jobTotal = sdKeys.reduce((s, sd) => s + Object.values(landscape[dom][sd]).reduce((ss, apps) => ss + apps.reduce((sss, app) => sss + (ctrlmJobCount[app.ac] || 0), 0), 0), 0);
+    const meta     = `${sdKeys.length} sub-domain${sdKeys.length !== 1 ? 's' : ''} · ${divCount} IT division${divCount !== 1 ? 's' : ''} · ${jobTotal.toLocaleString()} CTM job${jobTotal !== 1 ? 's' : ''}`;
 
     // Count criticality and plan occurrences for this domain
     const clCounts = {}, plCounts = {};
@@ -1844,7 +1845,8 @@ function buildEALByITDiv(appRegistry, domainColorMap) {
     const allApps  = Object.values(itDivMap[div]).flat();
     const domKeys  = Object.keys(itDivMap[div]).filter(d => d).sort();
     const appCount = divCounts[div];
-    const meta     = `${domKeys.length} domain${domKeys.length !== 1 ? 's' : ''}`;
+    const jobTotal = allApps.reduce((s, app) => s + (ctrlmJobCount[app.ac] || 0), 0);
+    const meta     = `${domKeys.length} domain${domKeys.length !== 1 ? 's' : ''} · ${jobTotal.toLocaleString()} CTM job${jobTotal !== 1 ? 's' : ''}`;
 
     // CL + plan counts for this IT division
     const clCounts = {}, plCounts = {};
@@ -1948,7 +1950,8 @@ function buildEALByLayer(appRegistry, domainColorMap) {
     const allApps  = Object.values(layerMap[lk]).flat();
     const domKeys  = Object.keys(layerMap[lk]).filter(d => d).sort();
     const appCount = layerCounts[lk];
-    const meta     = `${domKeys.length} domain${domKeys.length !== 1 ? 's' : ''}`;
+    const jobTotal = allApps.reduce((s, app) => s + (ctrlmJobCount[app.ac] || 0), 0);
+    const meta     = `${domKeys.length} domain${domKeys.length !== 1 ? 's' : ''} · ${jobTotal.toLocaleString()} CTM job${jobTotal !== 1 ? 's' : ''}`;
 
     const clCounts = {}, plCounts = {};
     allApps.forEach(app => {
