@@ -151,3 +151,4 @@ cargo fmt                      # auto-format
     - Switching perspective (By Domain / By IT Division) resets drill state to level 0
     - Expand modal respects current drill level
 - In Dashboard if `app_port_it_division` is empty but `app_port_app_code` have value  , setup group to `Other`
+- Display controlm `job amount` on Dashboard and Tooltip text on mounse over

@@ -530,7 +530,7 @@
           <div class="sub">Application domains</div>
         </div>
       </div>
-      <div class="stat-card orange">
+      <div class="stat-card orange" id="stat-card-unmatched">
         <div class="stat-icon">⚠️</div>
         <div class="stat-body">
           <div class="label">Unmatched</div>
@@ -538,7 +538,7 @@
           <div class="sub">No app portfolio link</div>
         </div>
       </div>
-      <div class="stat-card red">
+      <div class="stat-card red" id="stat-card-critical">
         <div class="stat-icon">🔴</div>
         <div class="stat-body">
           <div class="label">Critical Jobs</div>
@@ -733,10 +733,14 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <script>
 // ── Embedded data ──
 const DATA = __DATA__;
 const GEN_TIME = __GEN_TIME__;
+
+Chart.register(ChartDataLabels);
+Chart.defaults.set('plugins.datalabels', { display: false });
 
 // Key mapping: jn=job_name, fo=folder, ap=application, sa=sub_application,
 // dom=domain, sd=sub_domain, ac=app_code, div=it_division, at=appl_type,
@@ -843,10 +847,19 @@ function rebuildDashboardData() {
   const unmatched = d.filter(r => !r.ac);
   const critCount = d.filter(r => r.cr === 'Yes').length;
 
-  document.getElementById('stat-total').textContent     = d.length.toLocaleString();
+  const total = d.length;
+  const unmatchedPct = total > 0 ? (unmatched.length / total * 100).toFixed(1) : 0;
+  const critPct      = total > 0 ? (critCount / total * 100).toFixed(1) : 0;
+
+  document.getElementById('stat-total').textContent     = total.toLocaleString();
   document.getElementById('stat-domains').textContent   = domainSet.size;
   document.getElementById('stat-unmatched').textContent = unmatched.length.toLocaleString();
   document.getElementById('stat-critical').textContent  = critCount.toLocaleString();
+
+  const subUnmatched = document.querySelector('#stat-card-unmatched .sub');
+  const subCritical  = document.querySelector('#stat-card-critical .sub');
+  if (subUnmatched) subUnmatched.textContent = unmatchedPct + '% of total jobs';
+  if (subCritical)  subCritical.textContent  = critPct + '% of total jobs';
 
   // Rebuild domain/drill indexes
   domainCounts = {};
@@ -1017,6 +1030,7 @@ function renderDrillChart(entries, labelFn, onClickFn) {
 
   if (domainChartInst) domainChartInst.destroy();
 
+  const grandTotal = entries.reduce((s, [, v]) => s + v, 0);
   domainChartInst = new Chart(canvas, {
     type: 'bar',
     data: {
@@ -1033,12 +1047,30 @@ function renderDrillChart(entries, labelFn, onClickFn) {
       indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: false,
+      layout: { padding: { right: 64 } },
       onClick: onClickFn ? (evt, els) => {
         if (els.length > 0) onClickFn(entries[els[0].index][0]);
       } : undefined,
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.x.toLocaleString() + ' jobs' } },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const v   = ctx.parsed.x;
+              const pct = grandTotal > 0 ? (v / grandTotal * 100).toFixed(1) : 0;
+              return [' ' + v.toLocaleString() + ' jobs', ' ' + pct + '% of total'];
+            },
+          },
+        },
+        datalabels: {
+          display: true,
+          anchor: 'end',
+          align: 'right',
+          formatter: v => v > 0 ? v.toLocaleString() : '',
+          font: { size: 11, weight: '600' },
+          color: '#475569',
+          clip: false,
+        },
       },
       scales: {
         x: { beginAtZero: true, grid: { color: '#f1f5f9' } },
@@ -1100,6 +1132,7 @@ function rebuildTypeChart(d) {
   const typeEntries = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
 
   if (typeChartInst) typeChartInst.destroy();
+  const typeTotal = typeEntries.reduce((s, [, v]) => s + v, 0);
   typeChartInst = new Chart(document.getElementById('typeChart'), {
     type: 'doughnut',
     data: {
@@ -1117,9 +1150,37 @@ function rebuildTypeChart(d) {
       plugins: {
         legend: {
           position: 'bottom',
-          labels: { font: { size: 11 }, padding: 12, usePointStyle: true },
+          labels: {
+            font: { size: 11 }, padding: 12, usePointStyle: true,
+            generateLabels: chart => {
+              const ds = chart.data.datasets[0];
+              return chart.data.labels.map((label, i) => ({
+                text: label + '  ' + ds.data[i].toLocaleString(),
+                fillStyle: ds.backgroundColor[i],
+                strokeStyle: ds.backgroundColor[i],
+                pointStyle: 'circle',
+                index: i,
+              }));
+            },
+          },
         },
-        tooltip: { callbacks: { label: ctx => ' ' + ctx.label + ': ' + ctx.parsed.toLocaleString() } },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const pct = typeTotal > 0 ? (ctx.parsed / typeTotal * 100).toFixed(1) : 0;
+              return [' ' + ctx.label + ': ' + ctx.parsed.toLocaleString() + ' jobs', ' ' + pct + '% of total'];
+            },
+          },
+        },
+        datalabels: {
+          display: ctx => (ctx.dataset.data[ctx.dataIndex] / typeTotal) >= 0.04,
+          formatter: (value) => {
+            const pct = typeTotal > 0 ? (value / typeTotal * 100).toFixed(0) : 0;
+            return pct + '%';
+          },
+          font: { size: 11, weight: '700' },
+          color: '#fff',
+        },
       },
     },
   });
@@ -1138,6 +1199,7 @@ function renderITDivChart(entries, labelFn, clickHandler) {
   const canvas = document.getElementById('itDivChart');
   canvas.style.cursor = 'pointer';
 
+  const itGrandTotal = entries.reduce((s, [, v]) => s + v, 0);
   itDivChartInst = new Chart(canvas, {
     type: 'bar',
     data: {
@@ -1154,12 +1216,30 @@ function renderITDivChart(entries, labelFn, clickHandler) {
       indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: false,
+      layout: { padding: { right: 64 } },
       onClick: (evt, els) => {
         if (els.length > 0) clickHandler(entries[els[0].index][0]);
       },
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.x.toLocaleString() + ' jobs' } },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const v   = ctx.parsed.x;
+              const pct = itGrandTotal > 0 ? (v / itGrandTotal * 100).toFixed(1) : 0;
+              return [' ' + v.toLocaleString() + ' jobs', ' ' + pct + '% of total'];
+            },
+          },
+        },
+        datalabels: {
+          display: true,
+          anchor: 'end',
+          align: 'right',
+          formatter: v => v > 0 ? v.toLocaleString() : '',
+          font: { size: 11, weight: '600' },
+          color: '#475569',
+          clip: false,
+        },
       },
       scales: {
         x: { beginAtZero: true, grid: { color: '#f1f5f9' } },
@@ -1402,13 +1482,40 @@ function rebuildPlanStackedChart() {
   const canvas = document.getElementById('planStackedChart');
   canvas.style.cursor = 'pointer';
 
+  const rowTotals = entries.map(([, , t]) => t);
+  const stackRowTotalsPlugin = {
+    id: 'stackRowTotals',
+    afterDatasetsDraw(chart) {
+      const { ctx } = chart;
+      chart.data.labels.forEach((_, i) => {
+        let maxX = 0, barY = 0;
+        chart.data.datasets.forEach((_, di) => {
+          const meta = chart.getDatasetMeta(di);
+          if (meta.hidden) return;
+          const bar = meta.data[i];
+          if (bar && bar.x > maxX) { maxX = bar.x; barY = bar.y; }
+        });
+        if (!maxX || !rowTotals[i]) return;
+        ctx.save();
+        ctx.font = '600 11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        ctx.fillStyle = '#334155';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(rowTotals[i].toLocaleString(), maxX + 6, barY);
+        ctx.restore();
+      });
+    },
+  };
+
   planStackedChartInst = new Chart(canvas, {
     type: 'bar',
     data: { labels, datasets },
+    plugins: [stackRowTotalsPlugin],
     options: {
       indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: false,
+      layout: { padding: { right: 72 } },
       onClick: (evt, els) => {
         if (!els.length) return;
         const perspVal = entries[els[0].index][0];
@@ -1420,7 +1527,12 @@ function rebuildPlanStackedChart() {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: ctx => ' ' + ctx.dataset.label + ': ' + ctx.parsed.x.toLocaleString() + ' jobs',
+            label: ctx => {
+              const v = ctx.parsed.x;
+              const rowTotal = rowTotals[ctx.dataIndex] || 1;
+              const pct = (v / rowTotal * 100).toFixed(1);
+              return [' ' + ctx.dataset.label + ': ' + v.toLocaleString() + ' jobs', ' ' + pct + '% of row'];
+            },
           },
         },
       },
@@ -1481,6 +1593,7 @@ function showPlanAppView() {
   canvas.style.cursor = 'pointer';
 
   const barColor = PLAN_COLORS[planDrillState.plan] || '#94a3b8';
+  const drillGrandTotal = entries.reduce((s, [, v]) => s + v, 0);
   planStackedChartInst = new Chart(canvas, {
     type: 'bar',
     data: {
@@ -1497,13 +1610,31 @@ function showPlanAppView() {
       indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: false,
+      layout: { padding: { right: 64 } },
       onClick: (evt, els) => {
         if (!els.length) return;
         navigateToJobsByPlanApp(planDrillState.perspVal, planDrillState.plan, entries[els[0].index][0]);
       },
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.x.toLocaleString() + ' jobs' } },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const v   = ctx.parsed.x;
+              const pct = drillGrandTotal > 0 ? (v / drillGrandTotal * 100).toFixed(1) : 0;
+              return [' ' + v.toLocaleString() + ' jobs', ' ' + pct + '% of segment'];
+            },
+          },
+        },
+        datalabels: {
+          display: true,
+          anchor: 'end',
+          align: 'right',
+          formatter: v => v > 0 ? v.toLocaleString() : '',
+          font: { size: 11, weight: '600' },
+          color: '#475569',
+          clip: false,
+        },
       },
       scales: {
         x: { beginAtZero: true, grid: { color: '#f1f5f9' } },
@@ -1834,9 +1965,19 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeChartMo
 function makeBarOptions(extraOpts) {
   return Object.assign({
     indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+    layout: { padding: { right: 72 } },
     plugins: {
       legend: { display: false },
       tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.x.toLocaleString() + ' jobs' } },
+      datalabels: {
+        display: true,
+        anchor: 'end',
+        align: 'right',
+        formatter: v => v > 0 ? v.toLocaleString() : '',
+        font: { size: 12, weight: '600' },
+        color: '#475569',
+        clip: false,
+      },
     },
     scales: {
       x: { beginAtZero: true, grid: { color: '#f1f5f9' } },
@@ -1983,17 +2124,43 @@ function expandPlanChart() {
   DATA.forEach(r => { const p = r.pl || 'No plan'; planTotals[p] = (planTotals[p] || 0) + 1; });
   const plans = Object.keys(planTotals).sort((a, b) => planTotals[b] - planTotals[a]);
 
-  const labels   = entries.map(([k]) => planPerspective === 'domain' ? stripPrefix(k) : k);
-  const datasets = plans.map(plan => ({
+  const expandRowTotals = entries.map(([, , t]) => t);
+  const expandLabels   = entries.map(([k]) => planPerspective === 'domain' ? stripPrefix(k) : k);
+  const expandDatasets = plans.map(plan => ({
     label: plan, data: entries.map(([, pm]) => pm[plan] || 0),
     backgroundColor: PLAN_COLORS[plan] || '#94a3b8', borderWidth: 0, borderRadius: 2,
   }));
   const title = 'Application Plan and Job Control-M Related — ' + (planPerspective === 'domain' ? 'By Domain' : 'By IT Division');
 
+  const expandStackPlugin = {
+    id: 'expandStackTotals',
+    afterDatasetsDraw(chart) {
+      const { ctx } = chart;
+      chart.data.labels.forEach((_, i) => {
+        let maxX = 0, barY = 0;
+        chart.data.datasets.forEach((_, di) => {
+          const meta = chart.getDatasetMeta(di);
+          if (meta.hidden) return;
+          const bar = meta.data[i];
+          if (bar && bar.x > maxX) { maxX = bar.x; barY = bar.y; }
+        });
+        if (!maxX || !expandRowTotals[i]) return;
+        ctx.save();
+        ctx.font = '600 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        ctx.fillStyle = '#334155';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(expandRowTotals[i].toLocaleString(), maxX + 6, barY);
+        ctx.restore();
+      });
+    },
+  };
+
   openChartModal(title, canvas => {
     expandedChartInst = new Chart(canvas, {
       type: 'bar',
-      data: { labels, datasets },
+      data: { labels: expandLabels, datasets: expandDatasets },
+      plugins: [expandStackPlugin],
       options: makeBarOptions({
         plugins: {
           legend: { display: true, position: 'top', labels: { font: { size: 12 }, usePointStyle: true, padding: 14 } },
