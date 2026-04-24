@@ -1,6 +1,28 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct AppInventory {
+    #[serde(default)]
+    pub app_port_app_code: String,
+    #[serde(default)]
+    pub app_port_app_id: String,
+    #[serde(default)]
+    pub app_port_application_plan: String,
+    #[serde(default)]
+    pub app_port_category: String,
+    #[serde(default)]
+    pub app_port_criticality_level: String,
+    #[serde(default)]
+    pub app_port_domain: String,
+    #[serde(default)]
+    pub app_port_it_division: String,
+    #[serde(default)]
+    pub app_port_org_code: String,
+    #[serde(default)]
+    pub app_port_sub_domain: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Job {
     #[serde(default)]
     pub app_port_app_code: String,

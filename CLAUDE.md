@@ -5,7 +5,8 @@
 ## Project Identity
 
 `ctrlm-report` is a Rust binary crate (edition 2024). Its purpose is to generate self-contained HTML reports for `ctrlm` (control-m) workflows.
-It reads `dataset/output.json`, embeds the data into `src/template.html`, and writes a standalone `report.html` — no server required.
+
+It reads `dataset/output.json` (Control-M jobs) and `dataset/output_app_inventory.json` (full application portfolio), embeds both datasets into `src/template.html`, and writes a standalone `report.html` — no server required.
 
 
 
@@ -15,9 +16,9 @@ It reads `dataset/output.json`, embeds the data into `src/template.html`, and wr
 - Keep I/O at the edges; pure logic in the middle.
 - Module layout:
   - `main.rs` — CLI arg parsing via `clap`, wires `input` → `output`
-  - `input.rs` — loads and deserializes `output.json` into `Vec<Job>`
-  - `model.rs` — `Job` struct (all fields `#[serde(default)]`)
-  - `output.rs` — builds compact `ReportJob` (short serde keys to reduce size), serializes to JSON, and injects into `template.html` via `__DATA__` / `__GEN_TIME__` placeholders
+  - `input.rs` — `load_jobs()` deserializes `output.json` into `Vec<Job>`; `load_app_inventory()` deserializes `output_app_inventory.json` into `Vec<AppInventory>`
+  - `model.rs` — `Job` struct (Control-M job + app portfolio fields); `AppInventory` struct (app portfolio only)
+  - `output.rs` — builds compact `ReportJob` and `ReportAppItem` (short serde keys to reduce size), serializes to JSON, and injects into `template.html` via `__DATA__` / `__APP_DATA__` / `__GEN_TIME__` placeholders
   - `template.html` — the full HTML/JS report template, embedded at compile time via `include_str!`
 
 ## Dependencies
@@ -33,8 +34,8 @@ clap        = { version = "4", features = ["derive"] }
 ## CLI Usage
 
 ```bash
-cargo run                                      # reads dataset/output.json, writes report.html
-cargo run -- -i path/to/data.json -o out.html  # custom input/output paths
+cargo run                                                        # reads dataset/output.json + dataset/output_app_inventory.json, writes report.html
+cargo run -- -i path/to/data.json -a path/to/inventory.json -o out.html  # custom input/output paths
 ```
 
 
@@ -72,6 +73,26 @@ cargo run -- -i path/to/data.json -o out.html  # custom input/output paths
   },
 ```
 
+### Input `dataset/output_app_inventory.json`
+
+Full application portfolio — one entry per application, independent of Control-M jobs. Used by the EA Landscape tab. Injected as `APP_DATA` in the report.
+
+- Array of json 
+```
+  // example json attribute
+  {
+    "app_port_app_code": "ST" //application of application portfolio,
+    "app_port_app_id": "AP1160" //application id of application portfolio,
+    "app_port_application_plan": "No plan" //Action plan of Application,
+    "app_port_category": "App" //Category of Application,
+    "app_port_criticality_level": "Mission Critical" //Application level,
+    "app_port_domain": "3.Deposits & Core Banking" //under what domain name of this application , when render ignore number bullet,
+    "app_port_it_division": "Deposit Products" // under what it division,
+    "app_port_org_code": "5100" // under what organization code,
+    "app_port_sub_domain": "3.1 Current & Savings Accounts" // under what sub domain,
+  },
+```
+
 
 ## Pattern Decisions
 
@@ -80,6 +101,8 @@ cargo run -- -i path/to/data.json -o out.html  # custom input/output paths
 - No `unwrap`/`expect` in non-test code — propagate errors explicitly.
 - Derive `Debug` on all public types.
 - `ReportJob` uses short serde rename keys (`jn`, `fo`, `ap`, …) to reduce embedded JSON payload size.
+- `ReportAppItem` uses short serde rename keys (`ac`, `ai`, `pl`, `cat`, `cl`, `dom`, `div`, `oc`, `sd`) — same key conventions as `ReportJob` where fields overlap.
+- Two template placeholders: `__DATA__` → Control-M jobs (`DATA` in JS); `__APP_DATA__` → app portfolio (`APP_DATA` in JS).
 
 ## Build / Test / Run
 
@@ -157,3 +180,28 @@ cargo fmt                      # auto-format
   - Doughnut chart (Application Type): % label on each arc segment ≥4%; legend shows type name + count
   - Stat cards: Unmatched and Critical show `% of total jobs` in sub-text, updated when plan perspective changes
   - All bar chart tooltips show: jobs count + % of total
+- Dashboard in tab `EA Landscape` uses `APP_DATA` (from `dataset/output_app_inventory.json`) — the full application portfolio, not filtered by Control-M jobs.
+  - Layout: Domain → Sub-Domain (responsive column grid) → IT Division (labeled rows) → App cards
+  - Domain block: rounded card, 5px colored left border, tinted header, app-count badge
+  - Sub-domain grid: CSS `auto-fill minmax(256px)` columns, each a white panel with a colored underline header (matches domain color)
+  - IT Division: labeled rows with a thin extending rule
+  - App card: left border = plan color, bold app code, colored criticality dot (hover tooltip shows App ID · Criticality · Plan)
+  - Plan color stripe (left border): maintain=green, cloud migration=blue, decommission=red, replacement=amber, upgrade=purple, no plan=gray
+  - Criticality dot colors: Mission Critical=red, Critical=orange, Important=amber, Other=gray
+  - Page header: live stat pills (apps / domains / IT divisions) + legend bar (criticality dots + plan stripes)
+  - JS: `buildEALandscape()`, color helpers `EAL_CL_COLOR` / `EAL_CL_ORDER`, `EAL_PL_ORDER` / `EAL_PL_LABEL`, and `ealPlanColor()` function
+  - **Domain header summary pills**: two labeled rows per domain — `Criticality` and `App Plan`
+    - Each row has a fixed-width muted uppercase label (`52px`) so both rows align
+    - `Criticality` row: round-dot pills colored by `EAL_CL_COLOR`, ordered by `EAL_CL_ORDER`
+    - `App Plan` row: square-dot pills colored by `PLAN_COLORS`, ordered by `EAL_PL_ORDER`, labeled by `EAL_PL_LABEL`
+    - Pills show full name + count (e.g. `Mission Critical 5`); only non-zero counts rendered
+    - Click a pill → dims non-matching apps in that domain to 12% opacity; outlines the active pill
+    - Click same pill again → clears filter and restores all apps (toggle)
+    - One filter active per domain at a time; switching type clears the previous filter
+    - Implemented in `ealFilter(domId, type, val)`; app cards carry `data-cl` and `data-pl` attributes for targeting
+  - **Phone-book side-nav**: sticky left sidebar (`176px`, `position:sticky; top:112px`) listing all domains with colored dot + app count
+    - Clicking a domain entry calls `ealNavJump(id)` → smooth scrolls to that domain block
+    - Scroll spy via `window._ealScrollFn` (passive scroll listener): highlights the topmost visible domain; auto-scrolls the nav to keep active item in view
+    - Each domain block has `id="eal-d{index}"` and `data-eal-dom` attribute for scroll spy targeting
+    - Layout uses `.eal-body` (flex row): `.eal-sidenav` (sticky nav) + `.eal-content` (landscape, `flex:1`)
+    - Section-card uses `overflow:clip` (not `overflow:hidden`) so `position:sticky` works — `clip` preserves rounded-corner clipping without creating a scroll container
