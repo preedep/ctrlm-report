@@ -208,7 +208,14 @@ cargo fmt                      # auto-format
     - Pre-filters Jobs tab by domain + app code; reuses same navigation function as other dashboard drill-downs
     - `data-dom` and `data-ac` stored as HTML attributes (escaped via `escHtml`) to avoid inline JS escaping issues
     - Hover: card lifts with stronger shadow, app code label turns blue (`var(--primary)`) to signal interactivity
-    - Tooltip shows full app details + "Click to view Control-M jobs"
+    - Tooltip shows full app details + CTM job count (if any) + "Click to view Control-M jobs"
+  - **CTM Jobs highlight toggle**: button in the EA Landscape page header — "CTM Jobs" — toggles `eal-highlight-mode` class on `#ea-matrix-wrap`
+    - State: `let ealJobHighlight = false`; toggled by `toggleEALJobHighlight()`
+    - `ctrlmJobCount` map (keyed by `app_port_app_code`) is computed once at startup from `DATA`
+    - App cards with ≥1 CTM job receive class `eal-has-job` and an amber count badge (`.eal-ctm-badge`) showing the job count
+    - When mode is ON: `.eal-has-job` cards glow with amber ring; cards without jobs dim to 18% opacity
+    - When mode is OFF: all cards appear at full opacity with no ring (normal view)
+    - Button turns amber (`.active`) while mode is on; class persists across perspective rebuilds because it is on the wrapper element, not its innerHTML
   - **Phone-book side-nav**: sticky left sidebar (`176px`, `position:sticky; top:112px`) listing all domains with colored dot + app count
     - Clicking a domain entry calls `ealNavJump(id)` → smooth scrolls to that domain block
     - Scroll spy via `window._ealScrollFn` (passive scroll listener): highlights the topmost visible domain; auto-scrolls the nav to keep active item in view
