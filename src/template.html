@@ -497,6 +497,10 @@
     .eal-app-code { font-size:0.73rem; font-weight:700; color:#1e293b; white-space:nowrap; }
     .eal-cl-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
     .eal-app.eal-dim { opacity:0.12; box-shadow:none !important; transform:none !important; }
+    .eal-ctm-badge { display:inline-block; font-size:0.58rem; font-weight:700; background:#f59e0b; color:#fff; border-radius:3px; padding:0 3px; line-height:1.5; flex-shrink:0; }
+    .eal-highlight-mode .eal-app:not(.eal-has-job) { opacity:0.18; box-shadow:none !important; transform:none !important; }
+    .eal-highlight-mode .eal-app.eal-has-job { box-shadow:0 0 0 2px #f59e0b80, 0 2px 6px rgba(245,158,11,0.18) !important; }
+    .eal-highlight-mode .eal-app.eal-has-job:hover { box-shadow:0 0 0 2px #f59e0b, 0 4px 14px rgba(245,158,11,0.3) !important; }
 
     /* Domain header summary pills */
     .eal-domain-summary { display:flex; flex-direction:column; gap:4px; margin-top:0.5rem; }
@@ -548,6 +552,9 @@
     .eal-persp-btn { padding:0.4rem 1rem; font-size:0.78rem; font-weight:500; color:var(--text-muted); background:white; border:none; cursor:pointer; transition:all 0.12s; white-space:nowrap; }
     .eal-persp-btn + .eal-persp-btn { border-left:1px solid var(--border); }
     .eal-persp-btn.active { background:var(--primary); color:white; font-weight:700; }
+    .eal-highlight-btn { padding:0.4rem 0.9rem; font-size:0.78rem; font-weight:500; color:var(--text-muted); background:white; border:1px solid var(--border); border-radius:8px; cursor:pointer; transition:all 0.12s; white-space:nowrap; display:inline-flex; align-items:center; gap:0.35rem; flex-shrink:0; }
+    .eal-highlight-btn.active { background:#fffbeb; color:#d97706; border-color:#f59e0b; font-weight:700; }
+    .eal-highlight-btn .eal-hbtn-dot { width:8px; height:8px; border-radius:50%; background:currentColor; flex-shrink:0; }
 
     /* ── Responsive ── */
     @media (max-width: 1100px) {
@@ -627,6 +634,9 @@
             <button class="eal-persp-btn" data-persp="itdiv" onclick="setEALPerspective('itdiv')">By IT Division</button>
             <button class="eal-persp-btn" data-persp="layer" onclick="setEALPerspective('layer')">By Layer</button>
           </div>
+          <button class="eal-highlight-btn" id="eal-job-highlight-btn" onclick="toggleEALJobHighlight()" title="Highlight applications that have Control-M jobs">
+            <span class="eal-hbtn-dot"></span>CTM Jobs
+          </button>
           <div class="eal-stats-bar">
             <div class="eal-stat-pill"><b id="ea-stat-apps">—</b>&nbsp;apps</div>
             <div class="eal-stat-pill"><b id="ea-stat-domains">—</b>&nbsp;domains</div>
@@ -909,6 +919,10 @@
 const DATA = __DATA__;
 const APP_DATA = __APP_DATA__;
 const GEN_TIME = __GEN_TIME__;
+
+// Build per-app Control-M job count (used by EA Landscape highlight toggle)
+const ctrlmJobCount = {};
+DATA.forEach(j => { if (j.ac) ctrlmJobCount[j.ac] = (ctrlmJobCount[j.ac] || 0) + 1; });
 
 Chart.register(ChartDataLabels);
 Chart.defaults.set('plugins.datalabels', { display: false });
@@ -1572,6 +1586,7 @@ const EAL_PL_LABEL = {
 };
 
 let ealPerspective = 'domain';
+let ealJobHighlight = false;
 
 function setEALPerspective(persp) {
   ealPerspective = persp;
@@ -1636,10 +1651,14 @@ function ealAppCardHtml(app) {
   const planColor = ealPlanColor(app.pl);
   const clColor   = EAL_CL_COLOR[app.cl] || '#94a3b8';
   const plKey     = (app.pl || 'no plan').toLowerCase();
-  const tip       = [app.ai, app.cl, app.pl].filter(Boolean).join(' · ') + '\nClick to view Control-M jobs';
-  let h = `<div class="eal-app" data-cl="${escHtml(app.cl)}" data-pl="${escHtml(plKey)}" data-dom="${escHtml(app.dom)}" data-ac="${escHtml(app.ac)}" onclick="ealAppClick(this)" style="border-left-color:${planColor}" title="${escHtml(tip)}">`;
+  const jobCount  = ctrlmJobCount[app.ac] || 0;
+  const hasJob    = jobCount > 0;
+  const tip       = [app.ai, app.cl, app.pl].filter(Boolean).join(' · ') + (hasJob ? ` · ${jobCount} CTM job${jobCount !== 1 ? 's' : ''}` : '') + '\nClick to view Control-M jobs';
+  const extraCls  = hasJob ? ' eal-has-job' : '';
+  let h = `<div class="eal-app${extraCls}" data-cl="${escHtml(app.cl)}" data-pl="${escHtml(plKey)}" data-dom="${escHtml(app.dom)}" data-ac="${escHtml(app.ac)}" onclick="ealAppClick(this)" style="border-left-color:${planColor}" title="${escHtml(tip)}">`;
   h += `<span class="eal-app-code">${escHtml(app.ac)}</span>`;
   if (app.cl) h += `<span class="eal-cl-dot" style="background:${clColor}"></span>`;
+  if (hasJob) h += `<span class="eal-ctm-badge">${jobCount.toLocaleString()}</span>`;
   h += `</div>`;
   return h;
 }
@@ -1997,6 +2016,14 @@ function ealFilter(domId, type, val) {
   if (pill) pill.classList.add('eal-pill-active');
   const attr = type === 'cl' ? 'data-cl' : 'data-pl';
   apps.forEach(a => { if (a.getAttribute(attr) !== val) a.classList.add('eal-dim'); });
+}
+
+function toggleEALJobHighlight() {
+  ealJobHighlight = !ealJobHighlight;
+  const wrap = document.getElementById('ea-matrix-wrap');
+  const btn  = document.getElementById('eal-job-highlight-btn');
+  wrap.classList.toggle('eal-highlight-mode', ealJobHighlight);
+  btn.classList.toggle('active', ealJobHighlight);
 }
 
 // ── Job Plan stacked chart ──
