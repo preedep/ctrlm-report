@@ -597,6 +597,7 @@
         </div>
         <div style="display:flex;gap:0.5rem;align-items:center">
           <button id="itdiv-back-btn" class="drill-back-btn" style="display:none" onclick="itDivDrillBack()">← Back</button>
+          <button id="itdiv-view-jobs-btn" class="drill-back-btn" style="display:none;background:var(--primary);color:white;border-color:var(--primary)" onclick="viewJobsFromITDiv()">View Jobs →</button>
           <span class="badge badge-blue" id="itdiv-count-badge"></span>
           <button class="expand-btn" title="Expand" onclick="expandITDivChart()">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -1169,22 +1170,26 @@ function renderITDivChart(entries, labelFn, clickHandler) {
 }
 
 function updateITDivBreadcrumb() {
-  const title = document.getElementById('itdiv-chart-title');
-  const sub   = document.getElementById('itdiv-chart-sub');
-  const back  = document.getElementById('itdiv-back-btn');
-  const bc    = document.getElementById('itdiv-breadcrumb');
+  const title    = document.getElementById('itdiv-chart-title');
+  const sub      = document.getElementById('itdiv-chart-sub');
+  const back     = document.getElementById('itdiv-back-btn');
+  const viewJobs = document.getElementById('itdiv-view-jobs-btn');
+  const bc       = document.getElementById('itdiv-breadcrumb');
 
   if (itDivDrillState.level === 0) {
-    title.textContent  = 'Jobs by IT Division';
-    sub.textContent    = 'Job distribution across IT divisions — click a bar to drill down';
-    back.style.display = 'none';
-    bc.style.display   = 'none';
+    title.textContent    = 'Jobs by IT Division';
+    sub.textContent      = 'Job distribution across IT divisions — click a bar to drill down';
+    back.style.display   = 'none';
+    viewJobs.style.display = 'none';
+    bc.style.display     = 'none';
   } else {
-    title.textContent  = 'Applications in ' + itDivDrillState.division;
-    sub.textContent    = 'Click an application to view its jobs';
-    back.style.display = 'inline-flex';
-    bc.style.display   = 'flex';
-    bc.innerHTML = `<span class="bc-link" onclick="itDivDrillBack()">All IT Divisions</span><span class="bc-sep">›</span><span class="bc-active">${escHtml(itDivDrillState.division)}</span>`;
+    const divLabel       = itDivDrillState.division === 'Other' ? 'Other (No IT Division)' : itDivDrillState.division;
+    title.textContent    = 'Applications in ' + divLabel;
+    sub.textContent      = 'Click an application to view its jobs';
+    back.style.display   = 'inline-flex';
+    viewJobs.style.display = 'inline-flex';
+    bc.style.display     = 'flex';
+    bc.innerHTML = `<span class="bc-link" onclick="itDivDrillBack()">All IT Divisions</span><span class="bc-sep">›</span><span class="bc-active">${escHtml(divLabel)}</span>`;
   }
 }
 
@@ -1194,13 +1199,19 @@ function showITDivTopView(d) {
 
   const counts = {};
   d.forEach(r => {
-    if (!r.div) return;
-    counts[r.div] = (counts[r.div] || 0) + 1;
+    const key = r.div ? r.div : (r.ac ? 'Other' : null);
+    if (!key) return;
+    counts[key] = (counts[key] || 0) + 1;
   });
-  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  const entries = Object.entries(counts).sort((a, b) => {
+    if (a[0] === 'Other') return 1;
+    if (b[0] === 'Other') return -1;
+    return b[1] - a[1];
+  });
 
+  const divCount = entries.filter(([k]) => k !== 'Other').length;
   document.getElementById('itdiv-count-badge').textContent =
-    entries.length + ' division' + (entries.length !== 1 ? 's' : '');
+    divCount + ' division' + (divCount !== 1 ? 's' : '');
 
   renderITDivChart(entries, k => k, division => {
     itDivDrillState = { level: 1, division };
@@ -1211,8 +1222,9 @@ function showITDivTopView(d) {
 function showITDivAppView() {
   updateITDivBreadcrumb();
   const d = getDashData();
+  const isOther = itDivDrillState.division === 'Other';
   const counts = {};
-  d.filter(r => r.div === itDivDrillState.division).forEach(r => {
+  d.filter(r => isOther ? (!r.div && r.ac) : r.div === itDivDrillState.division).forEach(r => {
     const code = r.ac || '(No App Code)';
     counts[code] = (counts[code] || 0) + 1;
   });
@@ -1230,6 +1242,10 @@ function itDivDrillBack() {
   showITDivTopView(getDashData());
 }
 
+function viewJobsFromITDiv() {
+  navigateToJobsByITDiv(itDivDrillState.division);
+}
+
 function rebuildITDivChart(d) {
   showITDivTopView(d);
 }
@@ -1237,7 +1253,7 @@ function rebuildITDivChart(d) {
 function navigateToJobsByITDiv(div) {
   resetAllJobFilters();
   itDivFilter = div;
-  document.getElementById('itdiv-filter').value = div;
+  document.getElementById('itdiv-filter').value = div === 'Other' ? '' : div;
 
   if (dashPlan) {
     planFilter = dashPlan;
@@ -1257,7 +1273,7 @@ function navigateToJobsByITDiv(div) {
 function navigateToJobsByITDivApp(div, code) {
   resetAllJobFilters();
   itDivFilter = div;
-  document.getElementById('itdiv-filter').value = div;
+  document.getElementById('itdiv-filter').value = div === 'Other' ? '' : div;
   if (code !== '(No App Code)') {
     appCodeFilter = code;
   }
@@ -1335,17 +1351,22 @@ function rebuildPlanStackedChart() {
   // Build map: perspValue → { planLabel → count }
   const map = {};
   DATA.forEach(r => {
-    const pv   = r[perspKey] || '';
+    let pv = r[perspKey] || '';
+    if (perspKey === 'div' && !pv) pv = r.ac ? 'Other' : '';
     if (!pv || pv === '(No Domain)') return;
     const plan = r.pl || 'No plan';
     if (!map[pv]) map[pv] = {};
     map[pv][plan] = (map[pv][plan] || 0) + 1;
   });
 
-  // Sort rows by total jobs desc
+  // Sort rows by total jobs desc; keep "Other" at the bottom
   const entries = Object.entries(map)
     .map(([k, pm]) => [k, pm, Object.values(pm).reduce((a, b) => a + b, 0)])
-    .sort((a, b) => b[2] - a[2]);
+    .sort((a, b) => {
+      if (a[0] === 'Other') return 1;
+      if (b[0] === 'Other') return -1;
+      return b[2] - a[2];
+    });
 
   // All plans present in data, ordered by total count desc
   const planTotals = {};
@@ -1420,7 +1441,7 @@ function navigateToJobsByPlan(perspVal, plan) {
     populateSubdomainDropdown(perspVal);
   } else {
     itDivFilter = perspVal;
-    document.getElementById('itdiv-filter').value = perspVal;
+    document.getElementById('itdiv-filter').value = perspVal === 'Other' ? '' : perspVal;
   }
   planFilter = plan;
   document.getElementById('plan-filter').value = plan;
@@ -1442,7 +1463,8 @@ function showPlanAppView() {
   const perspKey = planPerspective === 'domain' ? 'dom' : 'div';
   const counts   = {};
   DATA.filter(r => {
-    const pv   = r[perspKey] || '';
+    let pv = r[perspKey] || '';
+    if (perspKey === 'div' && !pv) pv = r.ac ? 'Other' : '';
     const plan = r.pl || 'No plan';
     return pv === planDrillState.perspVal && plan === planDrillState.plan;
   }).forEach(r => {
@@ -1506,7 +1528,7 @@ function navigateToJobsByPlanApp(perspVal, plan, appCode) {
     populateSubdomainDropdown(perspVal);
   } else {
     itDivFilter = perspVal;
-    document.getElementById('itdiv-filter').value = perspVal;
+    document.getElementById('itdiv-filter').value = perspVal === 'Other' ? '' : perspVal;
   }
   planFilter = plan;
   document.getElementById('plan-filter').value = plan;
@@ -1664,7 +1686,10 @@ function applyFilters() {
   filteredData = DATA.filter(row => {
     if (domainFilter  && row.dom  !== domainFilter)           return false;
     if (sdFilter      && row.sd   !== sdFilter)               return false;
-    if (itDivFilter   && (row.div || '') !== itDivFilter)     return false;
+    if (itDivFilter) {
+      if (itDivFilter === 'Other') { if (row.div || !row.ac) return false; }
+      else if ((row.div || '') !== itDivFilter) return false;
+    }
     if (typeFilter    && row.at   !== typeFilter)             return false;
     if (planFilter    && (row.pl  || '') !== planFilter)      return false;
     if (critFilter    && row.cr  !== critFilter)              return false;

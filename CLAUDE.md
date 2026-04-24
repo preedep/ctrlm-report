@@ -150,3 +150,4 @@ cargo fmt                      # auto-format
     - Back button and breadcrumb appear at level 1; perspective toggle is hidden while drilling
     - Switching perspective (By Domain / By IT Division) resets drill state to level 0
     - Expand modal respects current drill level
+- In Dashboard if `app_port_it_division` is empty but `app_port_app_code` have value  , setup group to `Other`
