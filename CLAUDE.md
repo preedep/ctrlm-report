@@ -189,7 +189,16 @@ cargo fmt                      # auto-format
   - Plan color stripe (left border): maintain=green, cloud migration=blue, decommission=red, replacement=amber, upgrade=purple, no plan=gray
   - Criticality dot colors: Mission Critical=red, Critical=orange, Important=amber, Other=gray
   - Page header: live stat pills (apps / domains / IT divisions) + legend bar (criticality dots + plan stripes)
-  - JS: `buildEALandscape()`, color helpers `EAL_CL_COLOR` map and `ealPlanColor()` function
+  - JS: `buildEALandscape()`, color helpers `EAL_CL_COLOR` / `EAL_CL_ORDER`, `EAL_PL_ORDER` / `EAL_PL_LABEL`, and `ealPlanColor()` function
+  - **Domain header summary pills**: two labeled rows per domain — `Criticality` and `App Plan`
+    - Each row has a fixed-width muted uppercase label (`52px`) so both rows align
+    - `Criticality` row: round-dot pills colored by `EAL_CL_COLOR`, ordered by `EAL_CL_ORDER`
+    - `App Plan` row: square-dot pills colored by `PLAN_COLORS`, ordered by `EAL_PL_ORDER`, labeled by `EAL_PL_LABEL`
+    - Pills show full name + count (e.g. `Mission Critical 5`); only non-zero counts rendered
+    - Click a pill → dims non-matching apps in that domain to 12% opacity; outlines the active pill
+    - Click same pill again → clears filter and restores all apps (toggle)
+    - One filter active per domain at a time; switching type clears the previous filter
+    - Implemented in `ealFilter(domId, type, val)`; app cards carry `data-cl` and `data-pl` attributes for targeting
   - **Phone-book side-nav**: sticky left sidebar (`176px`, `position:sticky; top:112px`) listing all domains with colored dot + app count
     - Clicking a domain entry calls `ealNavJump(id)` → smooth scrolls to that domain block
     - Scroll spy via `window._ealScrollFn` (passive scroll listener): highlights the topmost visible domain; auto-scrolls the nav to keep active item in view

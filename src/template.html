@@ -483,10 +483,24 @@
     .eal-div-hdr::after { content:''; flex:1; height:1px; background:#e2e8f0; }
     .eal-app-grid { display:flex; flex-wrap:wrap; gap:4px; padding-left:2px; }
 
-    .eal-app { display:inline-flex; align-items:center; gap:5px; padding:3px 8px 3px 7px; border-radius:6px; background:#fff; border:1px solid #e2e8f0; border-left-width:3px; box-shadow:0 1px 2px rgba(0,0,0,0.04); cursor:default; transition:box-shadow 0.12s, transform 0.12s; }
+    .eal-app { display:inline-flex; align-items:center; gap:5px; padding:3px 8px 3px 7px; border-radius:6px; background:#fff; border:1px solid #e2e8f0; border-left-width:3px; box-shadow:0 1px 2px rgba(0,0,0,0.04); cursor:default; transition:box-shadow 0.12s, transform 0.12s, opacity 0.15s; }
     .eal-app:hover { box-shadow:0 4px 12px rgba(0,0,0,0.1); transform:translateY(-1px); }
     .eal-app-code { font-size:0.73rem; font-weight:700; color:#1e293b; white-space:nowrap; }
     .eal-cl-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+    .eal-app.eal-dim { opacity:0.12; box-shadow:none !important; transform:none !important; }
+
+    /* Domain header summary pills */
+    .eal-domain-summary { display:flex; flex-direction:column; gap:4px; margin-top:0.5rem; }
+    .eal-summary-row { display:flex; align-items:center; flex-wrap:wrap; gap:4px; }
+    .eal-summary-lbl { font-size:0.58rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:#94a3b8; width:52px; flex-shrink:0; }
+    .eal-summary-pill {
+      display:inline-flex; align-items:center; gap:4px; padding:2px 7px 2px 5px;
+      border-radius:9999px; border:1px solid transparent; font-size:0.62rem; font-weight:600;
+      cursor:pointer; user-select:none; transition:all 0.12s; white-space:nowrap;
+    }
+    .eal-summary-pill:hover { filter:brightness(0.88); }
+    .eal-summary-pill.eal-pill-active { outline:2px solid currentColor; outline-offset:1px; font-weight:700; }
+    .eal-spill-shape { width:7px; height:7px; flex-shrink:0; }
 
     /* ── EA Landscape side-nav (phone-book index) ── */
     .eal-body { display:flex; align-items:flex-start; }
@@ -1511,6 +1525,16 @@ const EAL_CL_COLOR = {
   'Important':        '#f59e0b',
   'Other':            '#94a3b8',
 };
+const EAL_CL_ORDER = ['Mission Critical', 'Critical', 'Important', 'Other'];
+const EAL_PL_ORDER = ['maintain', 'cloud migration', 'replacement', 'upgrade', 'decomission', 'no plan'];
+const EAL_PL_LABEL = {
+  'maintain':        'Maintain',
+  'cloud migration': 'Cloud Migration',
+  'decomission':     'Decommission',
+  'replacement':     'Replacement',
+  'upgrade':         'Upgrade',
+  'no plan':         'No Plan',
+};
 
 function ealPlanColor(pl) {
   return PLAN_COLORS[(pl || '').toLowerCase()] || '#cbd5e1';
@@ -1572,11 +1596,46 @@ function buildEALandscape() {
     const appCount = domAppCount[dom];
     const meta     = `${sdKeys.length} sub-domain${sdKeys.length !== 1 ? 's' : ''} · ${divCount} IT division${divCount !== 1 ? 's' : ''}`;
 
+    // Count criticality and plan occurrences for this domain
+    const clCounts = {}, plCounts = {};
+    sdKeys.forEach(sd => Object.values(landscape[dom][sd]).forEach(apps => apps.forEach(app => {
+      if (app.cl) clCounts[app.cl] = (clCounts[app.cl] || 0) + 1;
+      const plKey = (app.pl || 'no plan').toLowerCase();
+      plCounts[plKey] = (plCounts[plKey] || 0) + 1;
+    })));
+
+    // Build summary pills — two labeled rows: Criticality + Application Plan
+    let summaryHtml = '<div class="eal-domain-summary">';
+
+    summaryHtml += '<div class="eal-summary-row">';
+    summaryHtml += '<span class="eal-summary-lbl">Criticality</span>';
+    EAL_CL_ORDER.forEach(cl => {
+      const cnt = clCounts[cl]; if (!cnt) return;
+      const clr = EAL_CL_COLOR[cl] || '#94a3b8';
+      summaryHtml += `<div class="eal-summary-pill" data-type="cl" data-val="${escHtml(cl)}" onclick="ealFilter('eal-d${di}','cl','${cl}')" title="${escHtml(cl)}: ${cnt}" style="background:${clr}18;color:${clr};border-color:${clr}40">`;
+      summaryHtml += `<span class="eal-spill-shape" style="background:${clr};border-radius:50%"></span>${escHtml(cl)}&thinsp;${cnt}</div>`;
+    });
+    summaryHtml += '</div>';
+
+    summaryHtml += '<div class="eal-summary-row">';
+    summaryHtml += '<span class="eal-summary-lbl">App Plan</span>';
+    EAL_PL_ORDER.forEach(plKey => {
+      const cnt = plCounts[plKey]; if (!cnt) return;
+      const clr = PLAN_COLORS[plKey] || '#cbd5e1';
+      const lbl = EAL_PL_LABEL[plKey] || plKey;
+      summaryHtml += `<div class="eal-summary-pill" data-type="pl" data-val="${escHtml(plKey)}" onclick="ealFilter('eal-d${di}','pl','${plKey}')" title="${escHtml(lbl)}: ${cnt}" style="background:${clr}18;color:${clr};border-color:${clr}40">`;
+      summaryHtml += `<span class="eal-spill-shape" style="background:${clr};border-radius:2px"></span>${escHtml(lbl)}&thinsp;${cnt}</div>`;
+    });
+    summaryHtml += '</div>';
+
+    summaryHtml += '</div>';
+
     html += `<div class="eal-domain" id="eal-d${di}" data-eal-dom>`;
     html += `<div class="eal-domain-hdr" style="border-left-color:${color};background:${color}14">`;
     html += `<div class="eal-domain-title">`;
     html += `<div class="eal-domain-name">${escHtml(stripPrefix(dom))}</div>`;
     html += `<div class="eal-domain-meta">${escHtml(meta)}</div>`;
+    html += summaryHtml;
     html += `</div>`;
     html += `<span class="eal-domain-badge" style="background:${color}20;color:${color}">${appCount.toLocaleString()} app${appCount !== 1 ? 's' : ''}</span>`;
     html += `</div>`;
@@ -1606,8 +1665,9 @@ function buildEALandscape() {
         apps.forEach(app => {
           const planColor = ealPlanColor(app.pl);
           const clColor   = EAL_CL_COLOR[app.cl] || '#94a3b8';
+          const plKey     = (app.pl || 'no plan').toLowerCase();
           const tip       = [app.ai, app.cl, app.pl].filter(Boolean).join(' · ');
-          html += `<div class="eal-app" style="border-left-color:${planColor}" title="${escHtml(tip)}">`;
+          html += `<div class="eal-app" data-cl="${escHtml(app.cl)}" data-pl="${escHtml(plKey)}" style="border-left-color:${planColor}" title="${escHtml(tip)}">`;
           html += `<span class="eal-app-code">${escHtml(app.ac)}</span>`;
           if (app.cl) html += `<span class="eal-cl-dot" style="background:${clColor}"></span>`;
           html += `</div>`;
@@ -1650,6 +1710,30 @@ function ealNavJump(id) {
   if (!el) return;
   const top = el.getBoundingClientRect().top + window.scrollY - 120;
   window.scrollTo({ top, behavior: 'smooth' });
+}
+
+function ealFilter(domId, type, val) {
+  const domain = document.getElementById(domId);
+  if (!domain) return;
+  const sameFilter = domain.dataset.ealType === type && domain.dataset.ealVal === val;
+  const apps       = domain.querySelectorAll('.eal-app');
+  domain.querySelectorAll('.eal-summary-pill').forEach(p => p.classList.remove('eal-pill-active'));
+  apps.forEach(a => a.classList.remove('eal-dim'));
+
+  if (sameFilter) {
+    // Toggle off — clear filter
+    delete domain.dataset.ealType;
+    delete domain.dataset.ealVal;
+    return;
+  }
+
+  // Apply new filter
+  domain.dataset.ealType = type;
+  domain.dataset.ealVal  = val;
+  const pill = domain.querySelector(`.eal-summary-pill[data-type="${type}"][data-val="${val}"]`);
+  if (pill) pill.classList.add('eal-pill-active');
+  const attr = type === 'cl' ? 'data-cl' : 'data-pl';
+  apps.forEach(a => { if (a.getAttribute(attr) !== val) a.classList.add('eal-dim'); });
 }
 
 // ── Job Plan stacked chart ──
