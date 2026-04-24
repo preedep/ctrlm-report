@@ -447,6 +447,31 @@
 
     .chart-modal-body { flex: 1; padding: 1.5rem; overflow: hidden; min-height: 0; }
 
+    /* ── EA Landscape matrix ── */
+    .ea-matrix-wrap { overflow-x: auto; padding: 1.5rem; }
+    .ea-matrix { border-collapse: collapse; min-width: 100%; font-size: 0.8125rem; }
+    .ea-matrix th { padding: 0.5rem 1rem; border: 1px solid var(--border); background: #f8fafc; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); white-space: nowrap; }
+    .ea-matrix th.ea-col-hdr { text-align: center; }
+    .ea-matrix th.ea-row-lbl { text-align: left; min-width: 200px; }
+    .ea-matrix td { padding: 0.5rem 1rem; border: 1px solid var(--border); text-align: center; vertical-align: middle; }
+    .ea-matrix .ea-domain-td { text-align: left; font-weight: 500; cursor: pointer; color: var(--primary); white-space: nowrap; }
+    .ea-matrix .ea-domain-td:hover { background: var(--primary-light) !important; }
+    .ea-cell-mc  { background: #fee2e2; color: #991b1b; font-weight: 600; cursor: pointer; }
+    .ea-cell-bc  { background: #fef3c7; color: #92400e; font-weight: 600; cursor: pointer; }
+    .ea-cell-std { background: #dbeafe; color: #1d4ed8; font-weight: 600; cursor: pointer; }
+    .ea-cell-low { background: #f0fdf4; color: #166534; font-weight: 600; cursor: pointer; }
+    .ea-cell-unk { background: #f1f5f9; color: #475569; font-weight: 600; cursor: pointer; }
+    .ea-cell-mc:hover,.ea-cell-bc:hover,.ea-cell-std:hover,.ea-cell-low:hover,.ea-cell-unk:hover { filter: brightness(0.91); }
+    .ea-cell-empty { color: #cbd5e1; }
+    .ea-total-td { background: #f8fafc !important; font-weight: 700; color: var(--text); }
+    .ea-total-row td { background: #f1f5f9 !important; font-weight: 700; color: var(--text); }
+    .ea-cl-chip { display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 0.68rem; font-weight: 700; }
+    .ea-cl-chip.mc  { background: #fee2e2; color: #991b1b; }
+    .ea-cl-chip.bc  { background: #fef3c7; color: #92400e; }
+    .ea-cl-chip.std { background: #dbeafe; color: #1d4ed8; }
+    .ea-cl-chip.low { background: #f0fdf4; color: #166534; }
+    .ea-cl-chip.unk { background: #f1f5f9; color: #475569; }
+
     /* ── Responsive ── */
     @media (max-width: 1100px) {
       .charts-grid { grid-template-columns: 1fr; }
@@ -642,6 +667,20 @@
       </div>
     </div>
 
+    <!-- EA Landscape -->
+    <div class="section-card" style="margin-bottom:1.5rem">
+      <div class="section-header">
+        <div>
+          <h2>Application Portfolio — EA Landscape</h2>
+          <p>Unique applications by domain and criticality level — click a cell to view jobs</p>
+        </div>
+        <span class="badge badge-blue" id="ea-count-badge"></span>
+      </div>
+      <div class="ea-matrix-wrap" id="ea-matrix-wrap">
+        <!-- Built by JS -->
+      </div>
+    </div>
+
     <!-- Unmatched Applications -->
     <div class="section-card">
       <div class="section-header">
@@ -691,6 +730,9 @@
           <option value="">All Critical</option>
           <option value="Yes">Critical: Yes</option>
           <option value="No">Critical: No</option>
+        </select>
+        <select id="crit-level-filter" class="filter-select" style="min-width:160px">
+          <option value="">All Criticality</option>
         </select>
         <span class="result-info" id="result-info"></span>
       </div>
@@ -776,6 +818,7 @@ let itDivFilter    = '';
 let typeFilter     = '';
 let planFilter     = '';
 let critFilter     = '';
+let clFilter       = '';
 let appCodeFilter  = '';
 let dashPlan       = '';
 
@@ -893,6 +936,7 @@ function rebuildDashboardData() {
   showDomainView();
   rebuildTypeChart(d);
   rebuildITDivChart(d);
+  buildEALandscape(d);
 }
 
 // ── Dashboard: plan perspective pills ──
@@ -986,6 +1030,7 @@ function resetAllJobFilters() {
   typeFilter = '';
   planFilter = '';
   critFilter = '';
+  clFilter = '';
   appCodeFilter = '';
   document.getElementById('search-input').value = '';
   document.getElementById('domain-filter').value = '';
@@ -995,6 +1040,7 @@ function resetAllJobFilters() {
   document.getElementById('appltype-filter').value = '';
   document.getElementById('plan-filter').value = '';
   document.getElementById('critical-filter').value = '';
+  document.getElementById('crit-level-filter').value = '';
 }
 
 function navigateToJobs(domain, subDomain, appCode) {
@@ -1366,6 +1412,113 @@ function navigateToJobsByITDivApp(div, code) {
   document.querySelector('[data-tab="jobs"]').classList.add('active');
   document.getElementById('tab-jobs').classList.add('active');
 
+  currentPage = 1;
+  applyFilters();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── EA Landscape ──
+const CL_CELL_CLASS = { 'Mission Critical': 'ea-cell-mc', 'Business Critical': 'ea-cell-bc', 'Standard': 'ea-cell-std', 'Low': 'ea-cell-low' };
+const CL_CHIP_CLASS = { 'Mission Critical': 'mc', 'Business Critical': 'bc', 'Standard': 'std', 'Low': 'low' };
+
+function clCellCls(cl) { return CL_CELL_CLASS[cl] || 'ea-cell-unk'; }
+function clChipCls(cl)  { return CL_CHIP_CLASS[cl] || 'unk'; }
+
+function buildEALandscape(d) {
+  const eaData      = {};
+  const domainTotal = {};
+  const clTotal     = {};
+  let   grandSet    = new Set();
+
+  d.forEach(r => {
+    if (!r.dom || r.dom === '(No Domain)' || !r.ac) return;
+    const dom = r.dom;
+    const cl  = r.cl || '';
+    const ac  = r.ac;
+
+    if (!eaData[dom])      eaData[dom]      = {};
+    if (!eaData[dom][cl])  eaData[dom][cl]  = new Set();
+    eaData[dom][cl].add(ac);
+
+    if (!domainTotal[dom]) domainTotal[dom] = new Set();
+    domainTotal[dom].add(ac);
+
+    if (!clTotal[cl]) clTotal[cl] = new Set();
+    clTotal[cl].add(ac);
+
+    grandSet.add(ac);
+  });
+
+  const domains = Object.keys(eaData).sort((a, b) => {
+    return (domainTotal[b]?.size || 0) - (domainTotal[a]?.size || 0);
+  });
+
+  const allCols = [...new Set(d.filter(r => r.ac && r.dom && r.dom !== '(No Domain)').map(r => r.cl || ''))];
+  const cols = allCols.sort((a, b) => {
+    const ai = CL_ORDER.indexOf(a), bi = CL_ORDER.indexOf(b);
+    if (a === '') return 1; if (b === '') return -1;
+    if (ai !== -1 && bi !== -1) return ai - bi;
+    if (ai !== -1) return -1; if (bi !== -1) return 1;
+    return a.localeCompare(b);
+  });
+
+  const total = grandSet.size;
+  document.getElementById('ea-count-badge').textContent = total.toLocaleString() + ' unique app' + (total !== 1 ? 's' : '');
+
+  let html = '<table class="ea-matrix"><thead><tr>';
+  html += '<th class="ea-row-lbl">Domain</th>';
+  cols.forEach(cl => {
+    const label = cl || '—';
+    const chip  = `<span class="ea-cl-chip ${clChipCls(cl)}">${escHtml(label)}</span>`;
+    html += `<th class="ea-col-hdr">${chip}</th>`;
+  });
+  html += '<th class="ea-col-hdr ea-total-td">Total</th></tr></thead><tbody>';
+
+  domains.forEach(dom => {
+    html += '<tr>';
+    html += `<td class="ea-domain-td" onclick="navigateToJobsByEA(${JSON.stringify(dom)}, '')">${escHtml(stripPrefix(dom))}</td>`;
+    cols.forEach(cl => {
+      const count = eaData[dom]?.[cl]?.size || 0;
+      if (count > 0) {
+        html += `<td class="${clCellCls(cl)}" onclick="navigateToJobsByEA(${JSON.stringify(dom)}, ${JSON.stringify(cl)})">${count.toLocaleString()}</td>`;
+      } else {
+        html += '<td class="ea-cell-empty">—</td>';
+      }
+    });
+    const rowTotal = domainTotal[dom]?.size || 0;
+    html += `<td class="ea-total-td">${rowTotal.toLocaleString()}</td>`;
+    html += '</tr>';
+  });
+
+  // Totals row
+  html += '<tr class="ea-total-row"><td>Total</td>';
+  cols.forEach(cl => {
+    const count = clTotal[cl]?.size || 0;
+    html += `<td>${count > 0 ? count.toLocaleString() : '—'}</td>`;
+  });
+  html += `<td>${total.toLocaleString()}</td></tr>`;
+  html += '</tbody></table>';
+
+  document.getElementById('ea-matrix-wrap').innerHTML = html;
+}
+
+function navigateToJobsByEA(domain, cl) {
+  resetAllJobFilters();
+  domainFilter = domain || '';
+  document.getElementById('domain-filter').value = domainFilter;
+  populateSubdomainDropdown(domainFilter);
+  if (cl) {
+    clFilter = cl;
+    document.getElementById('crit-level-filter').value = cl;
+  }
+  if (dashPlan) {
+    planFilter = dashPlan;
+    document.getElementById('plan-filter').value = dashPlan;
+  }
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelector('[data-tab="jobs"]').classList.add('active');
+  document.getElementById('tab-jobs').classList.add('active');
   currentPage = 1;
   applyFilters();
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1748,6 +1901,22 @@ function populateSubdomainDropdown(forDomain) {
   document.getElementById('plan-filter').appendChild(opt);
 });
 
+// Criticality level
+const CL_ORDER = ['Mission Critical', 'Business Critical', 'Standard', 'Low'];
+const allCLs = [...new Set(DATA.map(r => r.cl || ''))].filter(Boolean);
+[...allCLs].sort((a, b) => {
+  const ai = CL_ORDER.indexOf(a), bi = CL_ORDER.indexOf(b);
+  if (ai !== -1 && bi !== -1) return ai - bi;
+  if (ai !== -1) return -1;
+  if (bi !== -1) return  1;
+  return a.localeCompare(b);
+}).forEach(cl => {
+  const opt = document.createElement('option');
+  opt.value       = cl;
+  opt.textContent = cl;
+  document.getElementById('crit-level-filter').appendChild(opt);
+});
+
 // ── Jobs table header ──
 const thead = document.getElementById('jobs-thead');
 thead.innerHTML = COLUMNS.map(col =>
@@ -1815,6 +1984,12 @@ document.getElementById('critical-filter').addEventListener('change', e => {
   applyFilters();
 });
 
+document.getElementById('crit-level-filter').addEventListener('change', e => {
+  clFilter    = e.target.value;
+  currentPage = 1;
+  applyFilters();
+});
+
 // ── Core filter & sort ──
 function applyFilters() {
   filteredData = DATA.filter(row => {
@@ -1827,6 +2002,7 @@ function applyFilters() {
     if (typeFilter    && row.at   !== typeFilter)             return false;
     if (planFilter    && (row.pl  || '') !== planFilter)      return false;
     if (critFilter    && row.cr  !== critFilter)              return false;
+    if (clFilter      && (row.cl || '') !== clFilter)         return false;
     if (appCodeFilter && (row.ac  || '') !== appCodeFilter)   return false;
     if (searchQuery) {
       const hay = COLUMNS.map(c => (row[c.key] || '').toLowerCase()).join('\x00');
