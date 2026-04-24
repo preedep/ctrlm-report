@@ -450,25 +450,23 @@
     /* ── EA Landscape holistic view ── */
     .ea-landscape { display: flex; flex-direction: column; gap: 1.25rem; padding: 1.25rem; }
     .ea-domain-block { border-radius: 10px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-    .ea-domain-hdr { display: flex; align-items: center; justify-content: space-between; padding: 0.875rem 1.25rem; border-left: 5px solid #2563eb; gap: 1rem; }
+    .ea-domain-hdr { padding: 0.875rem 1.25rem; border-left: 5px solid #2563eb; }
     .ea-domain-hdr-name { font-size: 0.9375rem; font-weight: 700; color: var(--text); }
     .ea-domain-hdr-meta { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
-    .ea-view-btn { padding: 0.3rem 0.875rem; border: 1px solid; border-radius: 6px; background: white; font-size: 0.75rem; font-weight: 600; cursor: pointer; flex-shrink: 0; transition: all 0.15s; }
-    .ea-view-btn:hover { color: white !important; }
     .ea-subdomains { background: white; }
     .ea-subdomain { border-top: 1px solid var(--border); padding: 0.875rem 1.25rem; }
-    .ea-subdomain-hdr { display: flex; align-items: baseline; gap: 0.75rem; margin-bottom: 0.625rem; }
+    .ea-subdomain-hdr { display: flex; align-items: baseline; gap: 0.75rem; margin-bottom: 0.75rem; }
     .ea-subdomain-name { font-size: 0.8rem; font-weight: 700; color: var(--text); }
     .ea-subdomain-meta { font-size: 0.7rem; color: var(--text-muted); }
-    .ea-itdiv-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-    .ea-itdiv-card { border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.75rem; cursor: pointer; min-width: 160px; flex: 1 1 160px; max-width: 280px; transition: box-shadow 0.15s, border-color 0.15s; background: white; }
-    .ea-itdiv-card:hover { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
-    .ea-itdiv-card-hdr { display: flex; justify-content: space-between; align-items: center; gap: 0.4rem; margin-bottom: 0.3rem; }
-    .ea-itdiv-name { font-size: 0.78rem; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .ea-itdiv-jobs { font-size: 0.68rem; font-weight: 600; background: var(--primary-light); color: var(--primary); padding: 1px 6px; border-radius: 9999px; flex-shrink: 0; white-space: nowrap; }
-    .ea-apps { display: flex; flex-wrap: wrap; gap: 3px; }
-    .ea-app-badge { font-size: 0.66rem; background: #f1f5f9; color: #334155; padding: 1px 5px; border-radius: 4px; font-weight: 500; }
-    .ea-app-more { font-size: 0.66rem; color: var(--text-muted); font-style: italic; align-self: center; }
+    .ea-itdiv-section { margin-bottom: 0.875rem; }
+    .ea-itdiv-section:last-child { margin-bottom: 0; }
+    .ea-itdiv-lbl { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
+    .ea-itdiv-lbl-name { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+    .ea-itdiv-count { font-size: 0.67rem; background: #f1f5f9; color: #475569; padding: 1px 6px; border-radius: 9999px; font-weight: 600; }
+    .ea-app-list { display: flex; flex-wrap: wrap; gap: 0.375rem; }
+    .ea-app-card { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.3rem 0.625rem; border: 1px solid var(--border); border-radius: 6px; background: white; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+    .ea-app-code { font-size: 0.8rem; font-weight: 700; color: var(--text); }
+    .ea-chip { font-size: 0.64rem; font-weight: 600; padding: 1px 6px; border-radius: 9999px; white-space: nowrap; }
 
     /* ── Responsive ── */
     @media (max-width: 1100px) {
@@ -945,7 +943,7 @@ function rebuildDashboardData() {
   showDomainView();
   rebuildTypeChart(d);
   rebuildITDivChart(d);
-  buildEALandscape(d);
+  buildEALandscape();
 }
 
 // ── Dashboard: plan perspective pills ──
@@ -1429,131 +1427,113 @@ function navigateToJobsByITDivApp(div, code) {
 // ── EA Landscape ──
 const CL_ORDER = ['Mission Critical', 'Business Critical', 'Standard', 'Low'];
 
-function buildEALandscape(d) {
-  // landscape[dom][sd][div] = { apps: Set<appCode>, jobs: number }
-  const landscape = {};
-  const domStats  = {};
+// Returns an HTML chip for a criticality level value
+function clChipHtml(cl) {
+  const m = {
+    'Mission Critical':  ['#fee2e2', '#991b1b'],
+    'Business Critical': ['#fef3c7', '#92400e'],
+    'Standard':          ['#dbeafe', '#1d4ed8'],
+    'Low':               ['#f0fdf4', '#166534'],
+  };
+  const [bg, fg] = m[cl] || ['#f1f5f9', '#64748b'];
+  return `<span class="ea-chip" style="background:${bg};color:${fg}">${escHtml(cl)}</span>`;
+}
 
-  d.forEach(r => {
-    if (!r.dom || r.dom === '(No Domain)') return;
-    const dom = r.dom;
-    const sd  = r.sd  || '(No Sub-Domain)';
-    const div = r.div ? r.div : (r.ac ? 'Other' : '(No IT Division)');
+// Returns an HTML chip for an application plan value (uses PLAN_COLORS palette)
+function plChipHtml(pl) {
+  const hex = PLAN_COLORS[pl.toLowerCase()] || '#94a3b8';
+  return `<span class="ea-chip" style="background:${hex}22;color:${hex}">${escHtml(pl)}</span>`;
+}
 
-    if (!landscape[dom])          landscape[dom]          = {};
-    if (!landscape[dom][sd])      landscape[dom][sd]      = {};
-    if (!landscape[dom][sd][div]) landscape[dom][sd][div] = { apps: new Set(), jobs: 0 };
-    if (r.ac) landscape[dom][sd][div].apps.add(r.ac);
-    landscape[dom][sd][div].jobs++;
-
-    if (!domStats[dom]) domStats[dom] = { apps: new Set(), jobs: 0 };
-    if (r.ac) domStats[dom].apps.add(r.ac);
-    domStats[dom].jobs++;
+function buildEALandscape() {
+  // Build a unique app registry from the full dataset (app portfolio attributes only).
+  // Each app code appears once; use the first row encountered for portfolio attributes.
+  const appRegistry = {};
+  DATA.forEach(r => {
+    if (!r.ac || appRegistry[r.ac]) return;
+    appRegistry[r.ac] = { ac: r.ac, dom: r.dom || '', sd: r.sd || '', div: r.div || '', cl: r.cl || '', pl: r.pl || '' };
   });
 
-  const domains   = Object.keys(landscape).sort((a, b) => (domStats[b]?.jobs || 0) - (domStats[a]?.jobs || 0));
-  const totalApps = new Set(d.filter(r => r.ac).map(r => r.ac)).size;
-  const totalJobs = d.filter(r => r.dom && r.dom !== '(No Domain)').length;
+  // Group: landscape[dom][sd][div] = [ appObj, ... ]
+  const landscape = {};
+  Object.values(appRegistry).forEach(app => {
+    if (!app.dom || app.dom === '(No Domain)') return;
+    const div = app.div || 'Other';
+    if (!landscape[app.dom])              landscape[app.dom]              = {};
+    if (!landscape[app.dom][app.sd])      landscape[app.dom][app.sd]      = {};
+    if (!landscape[app.dom][app.sd][div]) landscape[app.dom][app.sd][div] = [];
+    landscape[app.dom][app.sd][div].push(app);
+  });
+
+  // Sort domains by total application count descending
+  const domAppCount = {};
+  Object.keys(landscape).forEach(dom => {
+    domAppCount[dom] = Object.values(landscape[dom])
+      .reduce((s, sds) => s + Object.values(sds).reduce((ss, arr) => ss + arr.length, 0), 0);
+  });
+  const domains   = Object.keys(landscape).sort((a, b) => (domAppCount[b] || 0) - (domAppCount[a] || 0));
+  const totalApps = Object.keys(appRegistry).length;
   document.getElementById('ea-count-badge').textContent =
-    totalApps.toLocaleString() + ' apps · ' + totalJobs.toLocaleString() + ' jobs';
+    totalApps.toLocaleString() + ' application' + (totalApps !== 1 ? 's' : '');
 
   let html = '<div class="ea-landscape">';
 
   domains.forEach((dom, di) => {
-    const ds    = domStats[dom];
-    const color = domainColors[di % domainColors.length];
-    const sdCount = Object.keys(landscape[dom]).length;
-    const divCount = Object.values(landscape[dom]).reduce((s, sds) => s + Object.keys(sds).length, 0);
-    const meta  = `${sdCount} sub-domain${sdCount !== 1 ? 's' : ''} · ${divCount} IT division${divCount !== 1 ? 's' : ''} · ${ds.apps.size.toLocaleString()} apps · ${ds.jobs.toLocaleString()} jobs`;
+    const color    = domainColors[di % domainColors.length];
+    const sdKeys   = Object.keys(landscape[dom]);
+    const divCount = sdKeys.reduce((s, sd) => s + Object.keys(landscape[dom][sd]).length, 0);
+    const appCount = domAppCount[dom];
+    const meta     = `${sdKeys.length} sub-domain${sdKeys.length !== 1 ? 's' : ''} · `
+                   + `${divCount} IT division${divCount !== 1 ? 's' : ''} · `
+                   + `${appCount} application${appCount !== 1 ? 's' : ''}`;
 
     html += `<div class="ea-domain-block">`;
     html += `<div class="ea-domain-hdr" style="border-left-color:${color};background:${color}12">`;
-    html += `<div style="min-width:0">`;
     html += `<div class="ea-domain-hdr-name">${escHtml(stripPrefix(dom))}</div>`;
     html += `<div class="ea-domain-hdr-meta">${escHtml(meta)}</div>`;
-    html += `</div>`;
-    html += `<button class="ea-view-btn" style="color:${color};border-color:${color}" `
-          + `onmouseover="this.style.background='${color}'" onmouseout="this.style.background='white'" `
-          + `onclick="eaNavDomain(${JSON.stringify(dom)})">View Jobs →</button>`;
-    html += `</div>`;
+    html += `</div><div class="ea-subdomains">`;
 
-    html += `<div class="ea-subdomains">`;
-    Object.keys(landscape[dom]).sort().forEach(sd => {
-      const sdData  = landscape[dom][sd];
-      const sdApps  = new Set(Object.values(sdData).flatMap(v => [...v.apps]));
-      const sdJobs  = Object.values(sdData).reduce((s, v) => s + v.jobs, 0);
-      const divs    = Object.keys(sdData);
+    sdKeys.sort().forEach(sd => {
+      const sdDivs   = landscape[dom][sd];
+      const divKeys  = Object.keys(sdDivs);
+      const sdCount  = divKeys.reduce((s, dv) => s + sdDivs[dv].length, 0);
+      const sdLabel  = stripPrefix(sd) || '(No Sub-Domain)';
 
       html += `<div class="ea-subdomain">`;
       html += `<div class="ea-subdomain-hdr">`;
-      html += `<span class="ea-subdomain-name">${escHtml(stripPrefix(sd))}</span>`;
-      html += `<span class="ea-subdomain-meta">${divs.length} IT div · ${sdApps.size} apps · ${sdJobs.toLocaleString()} jobs</span>`;
+      html += `<span class="ea-subdomain-name">${escHtml(sdLabel)}</span>`;
+      html += `<span class="ea-subdomain-meta">${divKeys.length} IT div · ${sdCount} app${sdCount !== 1 ? 's' : ''}</span>`;
       html += `</div>`;
 
-      html += `<div class="ea-itdiv-grid">`;
-      divs.sort().forEach(div => {
-        const cell  = sdData[div];
-        const apps  = [...cell.apps].sort();
-        const shown = apps.slice(0, 6);
-        const more  = apps.length - shown.length;
-        const label = div === 'Other' ? 'Other (No IT Div)' : div;
+      divKeys.sort().forEach(div => {
+        const apps     = sdDivs[div].slice().sort((a, b) => a.ac.localeCompare(b.ac));
+        const divLabel = div === 'Other' ? 'Other (No IT Division)' : div;
 
-        html += `<div class="ea-itdiv-card" onclick="eaNavFull(${JSON.stringify(dom)},${JSON.stringify(sd)},${JSON.stringify(div)})">`;
-        html += `<div class="ea-itdiv-card-hdr">`;
-        html += `<span class="ea-itdiv-name" title="${escHtml(label)}">${escHtml(label)}</span>`;
-        html += `<span class="ea-itdiv-jobs">${cell.jobs.toLocaleString()} jobs</span>`;
-        html += `</div>`;
-        if (apps.length > 0) {
-          html += `<div class="ea-apps">`;
-          shown.forEach(a => { html += `<span class="ea-app-badge">${escHtml(a)}</span>`; });
-          if (more > 0) html += `<span class="ea-app-more">+${more} more</span>`;
+        html += `<div class="ea-itdiv-section">`;
+        html += `<div class="ea-itdiv-lbl">`;
+        html += `<span class="ea-itdiv-lbl-name">${escHtml(divLabel)}</span>`;
+        html += `<span class="ea-itdiv-count">${apps.length} app${apps.length !== 1 ? 's' : ''}</span>`;
+        html += `</div><div class="ea-app-list">`;
+
+        apps.forEach(app => {
+          html += `<div class="ea-app-card">`;
+          html += `<span class="ea-app-code">${escHtml(app.ac)}</span>`;
+          if (app.cl) html += clChipHtml(app.cl);
+          if (app.pl) html += plChipHtml(app.pl);
           html += `</div>`;
-        }
-        html += `</div>`;
+        });
+
+        html += `</div></div>`;
       });
-      html += `</div></div>`;
+
+      html += `</div>`;
     });
+
     html += `</div></div>`;
   });
 
   html += '</div>';
   document.getElementById('ea-matrix-wrap').innerHTML = html;
-}
-
-function eaNavDomain(domain) {
-  resetAllJobFilters();
-  domainFilter = domain;
-  document.getElementById('domain-filter').value = domain;
-  populateSubdomainDropdown(domain);
-  eaGoJobs();
-}
-
-function eaNavFull(domain, sd, div) {
-  resetAllJobFilters();
-  domainFilter = domain;
-  document.getElementById('domain-filter').value = domain;
-  populateSubdomainDropdown(domain);
-  if (sd && sd !== '(No Sub-Domain)') {
-    sdFilter = sd;
-    document.getElementById('subdomain-filter').value = sd;
-  }
-  if (div === 'Other') {
-    itDivFilter = 'Other';
-  } else if (div && div !== '(No IT Division)') {
-    itDivFilter = div;
-    document.getElementById('itdiv-filter').value = div;
-  }
-  eaGoJobs();
-}
-
-function eaGoJobs() {
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  document.querySelector('[data-tab="jobs"]').classList.add('active');
-  document.getElementById('tab-jobs').classList.add('active');
-  currentPage = 1;
-  applyFilters();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // ── Job Plan stacked chart ──
