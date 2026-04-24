@@ -447,30 +447,28 @@
 
     .chart-modal-body { flex: 1; padding: 1.5rem; overflow: hidden; min-height: 0; }
 
-    /* ── EA Landscape matrix ── */
-    .ea-matrix-wrap { overflow-x: auto; padding: 1.5rem; }
-    .ea-matrix { border-collapse: collapse; min-width: 100%; font-size: 0.8125rem; }
-    .ea-matrix th { padding: 0.5rem 1rem; border: 1px solid var(--border); background: #f8fafc; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); white-space: nowrap; }
-    .ea-matrix th.ea-col-hdr { text-align: center; }
-    .ea-matrix th.ea-row-lbl { text-align: left; min-width: 200px; }
-    .ea-matrix td { padding: 0.5rem 1rem; border: 1px solid var(--border); text-align: center; vertical-align: middle; }
-    .ea-matrix .ea-domain-td { text-align: left; font-weight: 500; cursor: pointer; color: var(--primary); white-space: nowrap; }
-    .ea-matrix .ea-domain-td:hover { background: var(--primary-light) !important; }
-    .ea-cell-mc  { background: #fee2e2; color: #991b1b; font-weight: 600; cursor: pointer; }
-    .ea-cell-bc  { background: #fef3c7; color: #92400e; font-weight: 600; cursor: pointer; }
-    .ea-cell-std { background: #dbeafe; color: #1d4ed8; font-weight: 600; cursor: pointer; }
-    .ea-cell-low { background: #f0fdf4; color: #166534; font-weight: 600; cursor: pointer; }
-    .ea-cell-unk { background: #f1f5f9; color: #475569; font-weight: 600; cursor: pointer; }
-    .ea-cell-mc:hover,.ea-cell-bc:hover,.ea-cell-std:hover,.ea-cell-low:hover,.ea-cell-unk:hover { filter: brightness(0.91); }
-    .ea-cell-empty { color: #cbd5e1; }
-    .ea-total-td { background: #f8fafc !important; font-weight: 700; color: var(--text); }
-    .ea-total-row td { background: #f1f5f9 !important; font-weight: 700; color: var(--text); }
-    .ea-cl-chip { display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 0.68rem; font-weight: 700; }
-    .ea-cl-chip.mc  { background: #fee2e2; color: #991b1b; }
-    .ea-cl-chip.bc  { background: #fef3c7; color: #92400e; }
-    .ea-cl-chip.std { background: #dbeafe; color: #1d4ed8; }
-    .ea-cl-chip.low { background: #f0fdf4; color: #166534; }
-    .ea-cl-chip.unk { background: #f1f5f9; color: #475569; }
+    /* ── EA Landscape holistic view ── */
+    .ea-landscape { display: flex; flex-direction: column; gap: 1.25rem; padding: 1.25rem; }
+    .ea-domain-block { border-radius: 10px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .ea-domain-hdr { display: flex; align-items: center; justify-content: space-between; padding: 0.875rem 1.25rem; border-left: 5px solid #2563eb; gap: 1rem; }
+    .ea-domain-hdr-name { font-size: 0.9375rem; font-weight: 700; color: var(--text); }
+    .ea-domain-hdr-meta { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
+    .ea-view-btn { padding: 0.3rem 0.875rem; border: 1px solid; border-radius: 6px; background: white; font-size: 0.75rem; font-weight: 600; cursor: pointer; flex-shrink: 0; transition: all 0.15s; }
+    .ea-view-btn:hover { color: white !important; }
+    .ea-subdomains { background: white; }
+    .ea-subdomain { border-top: 1px solid var(--border); padding: 0.875rem 1.25rem; }
+    .ea-subdomain-hdr { display: flex; align-items: baseline; gap: 0.75rem; margin-bottom: 0.625rem; }
+    .ea-subdomain-name { font-size: 0.8rem; font-weight: 700; color: var(--text); }
+    .ea-subdomain-meta { font-size: 0.7rem; color: var(--text-muted); }
+    .ea-itdiv-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .ea-itdiv-card { border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.75rem; cursor: pointer; min-width: 160px; flex: 1 1 160px; max-width: 280px; transition: box-shadow 0.15s, border-color 0.15s; background: white; }
+    .ea-itdiv-card:hover { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+    .ea-itdiv-card-hdr { display: flex; justify-content: space-between; align-items: center; gap: 0.4rem; margin-bottom: 0.3rem; }
+    .ea-itdiv-name { font-size: 0.78rem; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ea-itdiv-jobs { font-size: 0.68rem; font-weight: 600; background: var(--primary-light); color: var(--primary); padding: 1px 6px; border-radius: 9999px; flex-shrink: 0; white-space: nowrap; }
+    .ea-apps { display: flex; flex-wrap: wrap; gap: 3px; }
+    .ea-app-badge { font-size: 0.66rem; background: #f1f5f9; color: #334155; padding: 1px 5px; border-radius: 4px; font-weight: 500; }
+    .ea-app-more { font-size: 0.66rem; color: var(--text-muted); font-style: italic; align-self: center; }
 
     /* ── Responsive ── */
     @media (max-width: 1100px) {
@@ -1429,104 +1427,126 @@ function navigateToJobsByITDivApp(div, code) {
 }
 
 // ── EA Landscape ──
-const CL_ORDER      = ['Mission Critical', 'Business Critical', 'Standard', 'Low'];
-const CL_CELL_CLASS = { 'Mission Critical': 'ea-cell-mc', 'Business Critical': 'ea-cell-bc', 'Standard': 'ea-cell-std', 'Low': 'ea-cell-low' };
-const CL_CHIP_CLASS = { 'Mission Critical': 'mc', 'Business Critical': 'bc', 'Standard': 'std', 'Low': 'low' };
-
-function clCellCls(cl) { return CL_CELL_CLASS[cl] || 'ea-cell-unk'; }
-function clChipCls(cl)  { return CL_CHIP_CLASS[cl] || 'unk'; }
+const CL_ORDER = ['Mission Critical', 'Business Critical', 'Standard', 'Low'];
 
 function buildEALandscape(d) {
-  const eaData      = {};
-  const domainTotal = {};
-  const clTotal     = {};
-  let   grandSet    = new Set();
+  // landscape[dom][sd][div] = { apps: Set<appCode>, jobs: number }
+  const landscape = {};
+  const domStats  = {};
 
   d.forEach(r => {
-    if (!r.dom || r.dom === '(No Domain)' || !r.ac) return;
+    if (!r.dom || r.dom === '(No Domain)') return;
     const dom = r.dom;
-    const cl  = r.cl || '';
-    const ac  = r.ac;
+    const sd  = r.sd  || '(No Sub-Domain)';
+    const div = r.div ? r.div : (r.ac ? 'Other' : '(No IT Division)');
 
-    if (!eaData[dom])      eaData[dom]      = {};
-    if (!eaData[dom][cl])  eaData[dom][cl]  = new Set();
-    eaData[dom][cl].add(ac);
+    if (!landscape[dom])          landscape[dom]          = {};
+    if (!landscape[dom][sd])      landscape[dom][sd]      = {};
+    if (!landscape[dom][sd][div]) landscape[dom][sd][div] = { apps: new Set(), jobs: 0 };
+    if (r.ac) landscape[dom][sd][div].apps.add(r.ac);
+    landscape[dom][sd][div].jobs++;
 
-    if (!domainTotal[dom]) domainTotal[dom] = new Set();
-    domainTotal[dom].add(ac);
-
-    if (!clTotal[cl]) clTotal[cl] = new Set();
-    clTotal[cl].add(ac);
-
-    grandSet.add(ac);
+    if (!domStats[dom]) domStats[dom] = { apps: new Set(), jobs: 0 };
+    if (r.ac) domStats[dom].apps.add(r.ac);
+    domStats[dom].jobs++;
   });
 
-  const domains = Object.keys(eaData).sort((a, b) => {
-    return (domainTotal[b]?.size || 0) - (domainTotal[a]?.size || 0);
-  });
+  const domains   = Object.keys(landscape).sort((a, b) => (domStats[b]?.jobs || 0) - (domStats[a]?.jobs || 0));
+  const totalApps = new Set(d.filter(r => r.ac).map(r => r.ac)).size;
+  const totalJobs = d.filter(r => r.dom && r.dom !== '(No Domain)').length;
+  document.getElementById('ea-count-badge').textContent =
+    totalApps.toLocaleString() + ' apps · ' + totalJobs.toLocaleString() + ' jobs';
 
-  const allCols = [...new Set(d.filter(r => r.ac && r.dom && r.dom !== '(No Domain)').map(r => r.cl || ''))];
-  const cols = allCols.sort((a, b) => {
-    const ai = CL_ORDER.indexOf(a), bi = CL_ORDER.indexOf(b);
-    if (a === '') return 1; if (b === '') return -1;
-    if (ai !== -1 && bi !== -1) return ai - bi;
-    if (ai !== -1) return -1; if (bi !== -1) return 1;
-    return a.localeCompare(b);
-  });
+  let html = '<div class="ea-landscape">';
 
-  const total = grandSet.size;
-  document.getElementById('ea-count-badge').textContent = total.toLocaleString() + ' unique app' + (total !== 1 ? 's' : '');
+  domains.forEach((dom, di) => {
+    const ds    = domStats[dom];
+    const color = domainColors[di % domainColors.length];
+    const sdCount = Object.keys(landscape[dom]).length;
+    const divCount = Object.values(landscape[dom]).reduce((s, sds) => s + Object.keys(sds).length, 0);
+    const meta  = `${sdCount} sub-domain${sdCount !== 1 ? 's' : ''} · ${divCount} IT division${divCount !== 1 ? 's' : ''} · ${ds.apps.size.toLocaleString()} apps · ${ds.jobs.toLocaleString()} jobs`;
 
-  let html = '<table class="ea-matrix"><thead><tr>';
-  html += '<th class="ea-row-lbl">Domain</th>';
-  cols.forEach(cl => {
-    const label = cl || '—';
-    const chip  = `<span class="ea-cl-chip ${clChipCls(cl)}">${escHtml(label)}</span>`;
-    html += `<th class="ea-col-hdr">${chip}</th>`;
-  });
-  html += '<th class="ea-col-hdr ea-total-td">Total</th></tr></thead><tbody>';
+    html += `<div class="ea-domain-block">`;
+    html += `<div class="ea-domain-hdr" style="border-left-color:${color};background:${color}12">`;
+    html += `<div style="min-width:0">`;
+    html += `<div class="ea-domain-hdr-name">${escHtml(stripPrefix(dom))}</div>`;
+    html += `<div class="ea-domain-hdr-meta">${escHtml(meta)}</div>`;
+    html += `</div>`;
+    html += `<button class="ea-view-btn" style="color:${color};border-color:${color}" `
+          + `onmouseover="this.style.background='${color}'" onmouseout="this.style.background='white'" `
+          + `onclick="eaNavDomain(${JSON.stringify(dom)})">View Jobs →</button>`;
+    html += `</div>`;
 
-  domains.forEach(dom => {
-    html += '<tr>';
-    html += `<td class="ea-domain-td" onclick="navigateToJobsByEA(${JSON.stringify(dom)}, '')">${escHtml(stripPrefix(dom))}</td>`;
-    cols.forEach(cl => {
-      const count = eaData[dom]?.[cl]?.size || 0;
-      if (count > 0) {
-        html += `<td class="${clCellCls(cl)}" onclick="navigateToJobsByEA(${JSON.stringify(dom)}, ${JSON.stringify(cl)})">${count.toLocaleString()}</td>`;
-      } else {
-        html += '<td class="ea-cell-empty">—</td>';
-      }
+    html += `<div class="ea-subdomains">`;
+    Object.keys(landscape[dom]).sort().forEach(sd => {
+      const sdData  = landscape[dom][sd];
+      const sdApps  = new Set(Object.values(sdData).flatMap(v => [...v.apps]));
+      const sdJobs  = Object.values(sdData).reduce((s, v) => s + v.jobs, 0);
+      const divs    = Object.keys(sdData);
+
+      html += `<div class="ea-subdomain">`;
+      html += `<div class="ea-subdomain-hdr">`;
+      html += `<span class="ea-subdomain-name">${escHtml(stripPrefix(sd))}</span>`;
+      html += `<span class="ea-subdomain-meta">${divs.length} IT div · ${sdApps.size} apps · ${sdJobs.toLocaleString()} jobs</span>`;
+      html += `</div>`;
+
+      html += `<div class="ea-itdiv-grid">`;
+      divs.sort().forEach(div => {
+        const cell  = sdData[div];
+        const apps  = [...cell.apps].sort();
+        const shown = apps.slice(0, 6);
+        const more  = apps.length - shown.length;
+        const label = div === 'Other' ? 'Other (No IT Div)' : div;
+
+        html += `<div class="ea-itdiv-card" onclick="eaNavFull(${JSON.stringify(dom)},${JSON.stringify(sd)},${JSON.stringify(div)})">`;
+        html += `<div class="ea-itdiv-card-hdr">`;
+        html += `<span class="ea-itdiv-name" title="${escHtml(label)}">${escHtml(label)}</span>`;
+        html += `<span class="ea-itdiv-jobs">${cell.jobs.toLocaleString()} jobs</span>`;
+        html += `</div>`;
+        if (apps.length > 0) {
+          html += `<div class="ea-apps">`;
+          shown.forEach(a => { html += `<span class="ea-app-badge">${escHtml(a)}</span>`; });
+          if (more > 0) html += `<span class="ea-app-more">+${more} more</span>`;
+          html += `</div>`;
+        }
+        html += `</div>`;
+      });
+      html += `</div></div>`;
     });
-    const rowTotal = domainTotal[dom]?.size || 0;
-    html += `<td class="ea-total-td">${rowTotal.toLocaleString()}</td>`;
-    html += '</tr>';
+    html += `</div></div>`;
   });
 
-  // Totals row
-  html += '<tr class="ea-total-row"><td>Total</td>';
-  cols.forEach(cl => {
-    const count = clTotal[cl]?.size || 0;
-    html += `<td>${count > 0 ? count.toLocaleString() : '—'}</td>`;
-  });
-  html += `<td>${total.toLocaleString()}</td></tr>`;
-  html += '</tbody></table>';
-
+  html += '</div>';
   document.getElementById('ea-matrix-wrap').innerHTML = html;
 }
 
-function navigateToJobsByEA(domain, cl) {
+function eaNavDomain(domain) {
   resetAllJobFilters();
-  domainFilter = domain || '';
-  document.getElementById('domain-filter').value = domainFilter;
-  populateSubdomainDropdown(domainFilter);
-  if (cl) {
-    clFilter = cl;
-    document.getElementById('crit-level-filter').value = cl;
+  domainFilter = domain;
+  document.getElementById('domain-filter').value = domain;
+  populateSubdomainDropdown(domain);
+  eaGoJobs();
+}
+
+function eaNavFull(domain, sd, div) {
+  resetAllJobFilters();
+  domainFilter = domain;
+  document.getElementById('domain-filter').value = domain;
+  populateSubdomainDropdown(domain);
+  if (sd && sd !== '(No Sub-Domain)') {
+    sdFilter = sd;
+    document.getElementById('subdomain-filter').value = sd;
   }
-  if (dashPlan) {
-    planFilter = dashPlan;
-    document.getElementById('plan-filter').value = dashPlan;
+  if (div === 'Other') {
+    itDivFilter = 'Other';
+  } else if (div && div !== '(No IT Division)') {
+    itDivFilter = div;
+    document.getElementById('itdiv-filter').value = div;
   }
+  eaGoJobs();
+}
+
+function eaGoJobs() {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   document.querySelector('[data-tab="jobs"]').classList.add('active');
