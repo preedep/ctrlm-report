@@ -867,11 +867,11 @@ function rebuildDashboardData() {
   d.forEach(r => {
     if (!r.dom || r.dom === '(No Domain)') return;
     domainCounts[r.dom] = (domainCounts[r.dom] || 0) + 1;
-    const sd  = r.sd  || '';
-    const div = r.div || '';
-    if (!drillData[r.dom])        drillData[r.dom]       = {};
-    if (!drillData[r.dom][sd])    drillData[r.dom][sd]   = {};
-    drillData[r.dom][sd][div] = (drillData[r.dom][sd][div] || 0) + 1;
+    const sd = r.sd || '';
+    const ac = r.ac || '';
+    if (!drillData[r.dom])      drillData[r.dom]     = {};
+    if (!drillData[r.dom][sd])  drillData[r.dom][sd] = {};
+    drillData[r.dom][sd][ac] = (drillData[r.dom][sd][ac] || 0) + 1;
   });
 
   // Rebuild unmatched section
@@ -943,7 +943,7 @@ function getSubDomainEntries(domain) {
     .sort((a, b) => b[1] - a[1]);
 }
 
-function getITDivEntries(domain, subDomain) {
+function getAppCodeEntries(domain, subDomain) {
   return Object.entries((drillData[domain] || {})[subDomain] || {})
     .sort((a, b) => b[1] - a[1]);
 }
@@ -970,7 +970,7 @@ function updateBreadcrumb() {
     bc.innerHTML = `<span class="bc-link" onclick="drillToTop()">All Domains</span><span class="bc-sep">›</span><span class="bc-link" onclick="drillBack()">${escHtml(stripPrefix(drillState.domain))}</span><span class="bc-sep">›</span><span class="bc-active">${escHtml(stripPrefix(drillState.subDomain))}</span>`;
     back.style.display     = 'inline-flex';
     viewJobs.style.display = 'inline-flex';
-    title.textContent      = 'Jobs by IT Division';
+    title.textContent      = 'Jobs by Application';
   }
 }
 
@@ -997,7 +997,7 @@ function resetAllJobFilters() {
   document.getElementById('critical-filter').value = '';
 }
 
-function navigateToJobs(domain, subDomain) {
+function navigateToJobs(domain, subDomain, appCode) {
   resetAllJobFilters();
 
   domainFilter = domain || '';
@@ -1005,6 +1005,9 @@ function navigateToJobs(domain, subDomain) {
   populateSubdomainDropdown(domainFilter);
   sdFilter = subDomain || '';
   document.getElementById('subdomain-filter').value = sdFilter;
+  if (appCode && appCode !== '(No App Code)') {
+    appCodeFilter = appCode;
+  }
 
   if (dashPlan) {
     planFilter = dashPlan;
@@ -1095,16 +1098,16 @@ function showSubDomainView() {
   renderDrillChart(entries, sd => stripPrefix(sd) || '(No Sub-Domain)', subDomain => {
     drillState.level     = 2;
     drillState.subDomain = subDomain;
-    showITDivView();
+    showAppCodeView();
   });
 }
 
-function showITDivView() {
+function showAppCodeView() {
   updateBreadcrumb();
   renderDrillChart(
-    getITDivEntries(drillState.domain, drillState.subDomain),
-    div => div || '(No Division)',
-    () => navigateToJobs(drillState.domain, drillState.subDomain)
+    getAppCodeEntries(drillState.domain, drillState.subDomain),
+    ac => ac || '(No App Code)',
+    ac => navigateToJobs(drillState.domain, drillState.subDomain, ac)
   );
 }
 
@@ -1995,12 +1998,12 @@ function expandDomainChart() {
     entries = getSubDomainEntries(drillState.domain);
     title   = 'Sub-Domains — ' + stripPrefix(drillState.domain);
   } else {
-    entries = getITDivEntries(drillState.domain, drillState.subDomain);
-    title   = 'IT Divisions — ' + stripPrefix(drillState.subDomain);
+    entries = getAppCodeEntries(drillState.domain, drillState.subDomain);
+    title   = 'Applications — ' + stripPrefix(drillState.subDomain);
   }
   const labelFn = drillState.level === 0 ? k => stripPrefix(k)
     : drillState.level === 1 ? k => stripPrefix(k) || '(No Sub-Domain)'
-    : k => k || '(No Division)';
+    : k => k || '(No App Code)';
 
   openChartModal(title, canvas => {
     expandedChartInst = new Chart(canvas, {
