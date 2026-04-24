@@ -648,10 +648,10 @@
       <div class="eal-legend-bar">
         <span class="eal-legend-label">Criticality</span>
         <div class="eal-legend-group">
-          <span class="eal-legend-item"><span class="eal-legend-dot" style="background:#ef4444"></span>Mission Critical</span>
-          <span class="eal-legend-item"><span class="eal-legend-dot" style="background:#f97316"></span>Critical</span>
-          <span class="eal-legend-item"><span class="eal-legend-dot" style="background:#f59e0b"></span>Important</span>
-          <span class="eal-legend-item"><span class="eal-legend-dot" style="background:#94a3b8"></span>Other</span>
+          <span class="eal-legend-item"><span class="eal-legend-dot" style="background:#ef4444"></span>App Lvl1</span>
+          <span class="eal-legend-item"><span class="eal-legend-dot" style="background:#f97316"></span>App Lvl2</span>
+          <span class="eal-legend-item"><span class="eal-legend-dot" style="background:#f59e0b"></span>App Lvl3</span>
+          <span class="eal-legend-item"><span class="eal-legend-dot" style="background:#94a3b8"></span>App Lvl4</span>
         </div>
         <span class="eal-legend-sep"></span>
         <span class="eal-legend-label">Application Plan</span>
@@ -1574,6 +1574,12 @@ const EAL_CL_COLOR = {
   'Other':            '#94a3b8',
 };
 const EAL_CL_ORDER = ['Mission Critical', 'Critical', 'Important', 'Other'];
+const EAL_CL_LABEL = {
+  'Mission Critical': 'App Lvl1',
+  'Critical':         'App Lvl2',
+  'Important':        'App Lvl3',
+  'Other':            'App Lvl4',
+};
 const CL_ORDER     = EAL_CL_ORDER; // alias used by jobs tab criticality sort
 const EAL_PL_ORDER = ['maintain', 'cloud migration', 'replacement', 'upgrade', 'decomission', 'no plan'];
 const EAL_PL_LABEL = {
@@ -1628,8 +1634,9 @@ function ealSummaryPillsHtml(clCounts, plCounts, domId) {
   EAL_CL_ORDER.forEach(cl => {
     const cnt = clCounts[cl]; if (!cnt) return;
     const clr = EAL_CL_COLOR[cl] || '#94a3b8';
-    s += `<div class="eal-summary-pill" data-type="cl" data-val="${escHtml(cl)}" onclick="ealFilter('${domId}','cl','${cl}')" title="${escHtml(cl)}: ${cnt}" style="background:${clr}18;color:${clr};border-color:${clr}40">`;
-    s += `<span class="eal-spill-shape" style="background:${clr};border-radius:50%"></span>${escHtml(cl)}&thinsp;${cnt}</div>`;
+    const clLbl = EAL_CL_LABEL[cl] || cl;
+    s += `<div class="eal-summary-pill" data-type="cl" data-val="${escHtml(cl)}" onclick="ealFilter('${domId}','cl','${cl}')" title="${escHtml(clLbl)}: ${cnt}" style="background:${clr}18;color:${clr};border-color:${clr}40">`;
+    s += `<span class="eal-spill-shape" style="background:${clr};border-radius:50%"></span>${escHtml(clLbl)}(${cnt})</div>`;
   });
   s += '</div><div class="eal-summary-row"><span class="eal-summary-lbl">App Plan</span>';
   EAL_PL_ORDER.forEach(plKey => {
@@ -1637,7 +1644,7 @@ function ealSummaryPillsHtml(clCounts, plCounts, domId) {
     const clr = PLAN_COLORS[plKey] || '#cbd5e1';
     const lbl = EAL_PL_LABEL[plKey] || plKey;
     s += `<div class="eal-summary-pill" data-type="pl" data-val="${escHtml(plKey)}" onclick="ealFilter('${domId}','pl','${plKey}')" title="${escHtml(lbl)}: ${cnt}" style="background:${clr}18;color:${clr};border-color:${clr}40">`;
-    s += `<span class="eal-spill-shape" style="background:${clr};border-radius:2px"></span>${escHtml(lbl)}&thinsp;${cnt}</div>`;
+    s += `<span class="eal-spill-shape" style="background:${clr};border-radius:2px"></span>${escHtml(lbl)}(${cnt})</div>`;
   });
   s += '</div></div>';
   return s;
@@ -1653,7 +1660,8 @@ function ealAppCardHtml(app) {
   const plKey     = (app.pl || 'no plan').toLowerCase();
   const jobCount  = ctrlmJobCount[app.ac] || 0;
   const hasJob    = jobCount > 0;
-  const tip       = [app.ai, app.cl, app.pl].filter(Boolean).join(' · ') + (hasJob ? ` · ${jobCount} CTM job${jobCount !== 1 ? 's' : ''}` : '') + '\nClick to view Control-M jobs';
+  const clDisplay = EAL_CL_LABEL[app.cl] || app.cl;
+  const tip       = [app.ai, clDisplay, app.pl].filter(Boolean).join(' · ') + (hasJob ? ` · ${jobCount} CTM job${jobCount !== 1 ? 's' : ''}` : '') + '\nClick to view Control-M jobs';
   const extraCls  = hasJob ? ' eal-has-job' : '';
   let h = `<div class="eal-app${extraCls}" data-cl="${escHtml(app.cl)}" data-pl="${escHtml(plKey)}" data-dom="${escHtml(app.dom)}" data-ac="${escHtml(app.ac)}" onclick="ealAppClick(this)" style="border-left-color:${planColor}" title="${escHtml(tip)}">`;
   h += `<span class="eal-app-code">${escHtml(app.ac)}</span>`;

@@ -95,6 +95,16 @@ Full application portfolio — one entry per application, independent of Control
   },
 ```
 
+## Data Mapping
+
+Application criticality level Mapping to Application Level or App level
+
+```
+ Mission Critical => App Lvl1
+ Critical => App Lvl2
+ Important => App Lvl3
+ Other => App Lvl4
+```
 
 ## Pattern Decisions
 
@@ -192,14 +202,16 @@ cargo fmt                      # auto-format
   - IT Division: labeled rows with a thin extending rule
   - App card: left border = plan color, bold app code, colored criticality dot (hover tooltip shows App ID · Criticality · Plan)
   - Plan color stripe (left border): maintain=green, cloud migration=blue, decommission=red, replacement=amber, upgrade=purple, no plan=gray
-  - Criticality dot colors: Mission Critical=red, Critical=orange, Important=amber, Other=gray
+  - Criticality dot colors: Mission Critical (App Lvl1)=red, Critical (App Lvl2)=orange, Important (App Lvl3)=amber, Other (App Lvl4)=gray
+  - Criticality labels displayed as `App Lvl1`–`App Lvl4` throughout (legend, pills, tooltips) via `EAL_CL_LABEL`; internal data keys remain the raw values
   - Page header: live stat pills (apps / domains / IT divisions) + legend bar (criticality dots + plan stripes)
-  - JS: `buildEALandscape()`, color helpers `EAL_CL_COLOR` / `EAL_CL_ORDER`, `EAL_PL_ORDER` / `EAL_PL_LABEL`, and `ealPlanColor()` function
+  - JS: `buildEALandscape()`, color helpers `EAL_CL_COLOR` / `EAL_CL_ORDER` / `EAL_CL_LABEL`, `EAL_PL_ORDER` / `EAL_PL_LABEL`, and `ealPlanColor()` function
+  - `EAL_CL_LABEL` maps raw criticality values to display labels: `Mission Critical`→`App Lvl1`, `Critical`→`App Lvl2`, `Important`→`App Lvl3`, `Other`→`App Lvl4`; used in legend, summary pills, and app card tooltips
   - **Domain header summary pills**: two labeled rows per domain — `Criticality` and `App Plan`
     - Each row has a fixed-width muted uppercase label (`52px`) so both rows align
-    - `Criticality` row: round-dot pills colored by `EAL_CL_COLOR`, ordered by `EAL_CL_ORDER`
+    - `Criticality` row: round-dot pills colored by `EAL_CL_COLOR`, ordered by `EAL_CL_ORDER`, labeled via `EAL_CL_LABEL` (e.g. `App Lvl1`)
     - `App Plan` row: square-dot pills colored by `PLAN_COLORS`, ordered by `EAL_PL_ORDER`, labeled by `EAL_PL_LABEL`
-    - Pills show full name + count (e.g. `Mission Critical 5`); only non-zero counts rendered
+    - Pills show mapped label + count in parentheses (e.g. `App Lvl1(5)`); only non-zero counts rendered
     - Click a pill → dims non-matching apps in that domain to 12% opacity; outlines the active pill
     - Click same pill again → clears filter and restores all apps (toggle)
     - One filter active per domain at a time; switching type clears the previous filter
@@ -208,7 +220,7 @@ cargo fmt                      # auto-format
     - Pre-filters Jobs tab by domain + app code; reuses same navigation function as other dashboard drill-downs
     - `data-dom` and `data-ac` stored as HTML attributes (escaped via `escHtml`) to avoid inline JS escaping issues
     - Hover: card lifts with stronger shadow, app code label turns blue (`var(--primary)`) to signal interactivity
-    - Tooltip shows full app details + CTM job count (if any) + "Click to view Control-M jobs"
+    - Tooltip shows full app details + CTM job count (if any) + "Click to view Control-M jobs"; criticality shown as mapped label (e.g. `App Lvl1`)
   - **CTM Jobs highlight toggle**: button in the EA Landscape page header — "CTM Jobs" — toggles `eal-highlight-mode` class on `#ea-matrix-wrap`
     - State: `let ealJobHighlight = false`; toggled by `toggleEALJobHighlight()`
     - `ctrlmJobCount` map (keyed by `app_port_app_code`) is computed once at startup from `DATA`
