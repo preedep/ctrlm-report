@@ -509,7 +509,14 @@
 
 <!-- Tab Navigation -->
 <nav class="tabs">
-  <button class="tab-btn active" data-tab="dashboard">
+  <button class="tab-btn active" data-tab="ea">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="3" y="3" width="8" height="5" rx="1"/><rect x="13" y="3" width="8" height="5" rx="1"/>
+      <rect x="3" y="11" width="8" height="10" rx="1"/><rect x="13" y="11" width="8" height="10" rx="1"/>
+    </svg>
+    EA Landscape
+  </button>
+  <button class="tab-btn" data-tab="dashboard">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
       <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
@@ -527,8 +534,26 @@
   </button>
 </nav>
 
+<!-- ── EA Landscape Tab ── -->
+<div class="tab-content active" id="tab-ea">
+  <main>
+    <div class="section-card">
+      <div class="section-header">
+        <div>
+          <h2>Application Portfolio — EA Landscape</h2>
+          <p>Unique applications by domain and criticality level — click a cell to view jobs</p>
+        </div>
+        <span class="badge badge-blue" id="ea-count-badge"></span>
+      </div>
+      <div class="ea-matrix-wrap" id="ea-matrix-wrap">
+        <!-- Built by JS -->
+      </div>
+    </div>
+  </main>
+</div>
+
 <!-- ── Dashboard Tab ── -->
-<div class="tab-content active" id="tab-dashboard">
+<div class="tab-content" id="tab-dashboard">
   <main>
 
     <!-- Plan Perspective Pills -->
@@ -664,20 +689,6 @@
         <div id="plan-stacked-wrapper" class="chart-wrapper" style="height:400px">
           <canvas id="planStackedChart"></canvas>
         </div>
-      </div>
-    </div>
-
-    <!-- EA Landscape -->
-    <div class="section-card" style="margin-bottom:1.5rem">
-      <div class="section-header">
-        <div>
-          <h2>Application Portfolio — EA Landscape</h2>
-          <p>Unique applications by domain and criticality level — click a cell to view jobs</p>
-        </div>
-        <span class="badge badge-blue" id="ea-count-badge"></span>
-      </div>
-      <div class="ea-matrix-wrap" id="ea-matrix-wrap">
-        <!-- Built by JS -->
       </div>
     </div>
 
@@ -1418,6 +1429,7 @@ function navigateToJobsByITDivApp(div, code) {
 }
 
 // ── EA Landscape ──
+const CL_ORDER      = ['Mission Critical', 'Business Critical', 'Standard', 'Low'];
 const CL_CELL_CLASS = { 'Mission Critical': 'ea-cell-mc', 'Business Critical': 'ea-cell-bc', 'Standard': 'ea-cell-std', 'Low': 'ea-cell-low' };
 const CL_CHIP_CLASS = { 'Mission Critical': 'mc', 'Business Critical': 'bc', 'Standard': 'std', 'Low': 'low' };
 
@@ -1902,7 +1914,6 @@ function populateSubdomainDropdown(forDomain) {
 });
 
 // Criticality level
-const CL_ORDER = ['Mission Critical', 'Business Critical', 'Standard', 'Low'];
 const allCLs = [...new Set(DATA.map(r => r.cl || ''))].filter(Boolean);
 [...allCLs].sort((a, b) => {
   const ai = CL_ORDER.indexOf(a), bi = CL_ORDER.indexOf(b);
