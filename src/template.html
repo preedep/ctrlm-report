@@ -488,6 +488,38 @@
     .eal-app-code { font-size:0.73rem; font-weight:700; color:#1e293b; white-space:nowrap; }
     .eal-cl-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
 
+    /* ── EA Landscape side-nav (phone-book index) ── */
+    .eal-body { display:flex; align-items:flex-start; }
+    .eal-sidenav {
+      width:176px; flex-shrink:0;
+      position:sticky; top:112px; /* 64px header + 48px tab bar */
+      max-height:calc(100vh - 120px); overflow-y:auto;
+      border-right:1px solid var(--border); background:#f8fafc;
+      padding:0.75rem 0; scrollbar-width:thin;
+    }
+    .eal-sidenav::-webkit-scrollbar { width:3px; }
+    .eal-sidenav::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:2px; }
+    .eal-nav-hdr {
+      font-size:0.58rem; font-weight:700; text-transform:uppercase; letter-spacing:0.09em;
+      color:var(--text-muted); padding:0 0.875rem 0.5rem;
+      border-bottom:1px solid var(--border); margin-bottom:0.375rem;
+    }
+    .eal-nav-item {
+      display:flex; align-items:center; gap:0.45rem;
+      padding:0.3rem 0.75rem 0.3rem 0.625rem;
+      font-size:0.68rem; font-weight:500; color:#475569;
+      border-left:3px solid transparent; cursor:pointer;
+      transition:all 0.12s; line-height:1.35; user-select:none;
+    }
+    .eal-nav-item:hover { background:#f1f5f9; color:var(--text); }
+    .eal-nav-item.eal-nav-active {
+      font-weight:700; color:var(--primary); background:#eff6ff;
+      border-left-color:var(--primary);
+    }
+    .eal-nav-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+    .eal-nav-count { margin-left:auto; font-size:0.57rem; color:#94a3b8; flex-shrink:0; }
+    .eal-content { flex:1; min-width:0; }
+
     /* ── Responsive ── */
     @media (max-width: 1100px) {
       .charts-grid { grid-template-columns: 1fr; }
@@ -553,7 +585,7 @@
 <!-- ── EA Landscape Tab ── -->
 <div class="tab-content active" id="tab-ea">
   <main>
-    <div class="section-card" style="padding:0;overflow:hidden">
+    <div class="section-card" style="padding:0;overflow:clip">
       <!-- Page header + stats -->
       <div class="eal-page-hdr">
         <div>
@@ -586,8 +618,11 @@
           <span class="eal-legend-item"><span class="eal-legend-stripe" style="background:#cbd5e1"></span>No Plan</span>
         </div>
       </div>
-      <!-- Landscape body -->
-      <div id="ea-matrix-wrap"><!-- built by JS --></div>
+      <!-- Landscape body: sticky side-nav + content -->
+      <div class="eal-body">
+        <nav class="eal-sidenav" id="eal-nav"><!-- built by JS --></nav>
+        <div class="eal-content" id="ea-matrix-wrap"><!-- built by JS --></div>
+      </div>
     </div>
   </main>
 </div>
@@ -1515,6 +1550,19 @@ function buildEALandscape() {
   document.getElementById('ea-stat-domains').textContent = domains.length;
   document.getElementById('ea-stat-divs').textContent    = totalDivs.toLocaleString();
 
+  // Build side-nav (phone-book domain index)
+  let navHtml = `<div class="eal-nav-hdr">Domains</div>`;
+  domains.forEach((dom, di) => {
+    const color = domainColors[di % domainColors.length];
+    const count = domAppCount[dom];
+    navHtml += `<div class="eal-nav-item" data-id="eal-d${di}" onclick="ealNavJump('eal-d${di}')">`;
+    navHtml += `<span class="eal-nav-dot" style="background:${color}"></span>`;
+    navHtml += `<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(stripPrefix(dom))}</span>`;
+    navHtml += `<span class="eal-nav-count">${count}</span>`;
+    navHtml += `</div>`;
+  });
+  document.getElementById('eal-nav').innerHTML = navHtml;
+
   let html = '<div class="eal-root">';
 
   domains.forEach((dom, di) => {
@@ -1524,7 +1572,7 @@ function buildEALandscape() {
     const appCount = domAppCount[dom];
     const meta     = `${sdKeys.length} sub-domain${sdKeys.length !== 1 ? 's' : ''} · ${divCount} IT division${divCount !== 1 ? 's' : ''}`;
 
-    html += `<div class="eal-domain">`;
+    html += `<div class="eal-domain" id="eal-d${di}" data-eal-dom>`;
     html += `<div class="eal-domain-hdr" style="border-left-color:${color};background:${color}14">`;
     html += `<div class="eal-domain-title">`;
     html += `<div class="eal-domain-name">${escHtml(stripPrefix(dom))}</div>`;
@@ -1576,6 +1624,32 @@ function buildEALandscape() {
 
   html += '</div>';
   document.getElementById('ea-matrix-wrap').innerHTML = html;
+
+  // Scroll spy: highlight the domain currently at top of viewport
+  if (window._ealScrollFn) window.removeEventListener('scroll', window._ealScrollFn);
+  window._ealScrollFn = () => {
+    const navItems = document.querySelectorAll('.eal-nav-item');
+    const blocks   = document.querySelectorAll('[data-eal-dom]');
+    const threshold = 120; // header (64) + tab bar (48) + small buffer
+    let activeId = blocks[0]?.id || '';
+    blocks.forEach(el => {
+      if (el.getBoundingClientRect().top <= threshold + 8) activeId = el.id;
+    });
+    navItems.forEach(item => {
+      const on = item.dataset.id === activeId;
+      item.classList.toggle('eal-nav-active', on);
+      if (on) item.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+    });
+  };
+  window.addEventListener('scroll', window._ealScrollFn, { passive: true });
+  window._ealScrollFn(); // initial highlight
+}
+
+function ealNavJump(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const top = el.getBoundingClientRect().top + window.scrollY - 120;
+  window.scrollTo({ top, behavior: 'smooth' });
 }
 
 // ── Job Plan stacked chart ──

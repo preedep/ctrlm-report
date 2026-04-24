@@ -190,3 +190,9 @@ cargo fmt                      # auto-format
   - Criticality dot colors: Mission Critical=red, Critical=orange, Important=amber, Other=gray
   - Page header: live stat pills (apps / domains / IT divisions) + legend bar (criticality dots + plan stripes)
   - JS: `buildEALandscape()`, color helpers `EAL_CL_COLOR` map and `ealPlanColor()` function
+  - **Phone-book side-nav**: sticky left sidebar (`176px`, `position:sticky; top:112px`) listing all domains with colored dot + app count
+    - Clicking a domain entry calls `ealNavJump(id)` → smooth scrolls to that domain block
+    - Scroll spy via `window._ealScrollFn` (passive scroll listener): highlights the topmost visible domain; auto-scrolls the nav to keep active item in view
+    - Each domain block has `id="eal-d{index}"` and `data-eal-dom` attribute for scroll spy targeting
+    - Layout uses `.eal-body` (flex row): `.eal-sidenav` (sticky nav) + `.eal-content` (landscape, `flex:1`)
+    - Section-card uses `overflow:clip` (not `overflow:hidden`) so `position:sticky` works — `clip` preserves rounded-corner clipping without creating a scroll container
