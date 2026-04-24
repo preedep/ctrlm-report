@@ -151,4 +151,9 @@ cargo fmt                      # auto-format
     - Switching perspective (By Domain / By IT Division) resets drill state to level 0
     - Expand modal respects current drill level
 - In Dashboard if `app_port_it_division` is empty but `app_port_app_code` have value  , setup group to `Other`
-- Display controlm `job amount` on Dashboard and Tooltip text on mounse over
+- Display controlm `job amount` on Dashboard charts:
+  - Bar charts (Domain, IT Division, Plan drill-down): count label at bar end (e.g. `1,234`)
+  - Stacked bar chart (Application Plan): row total drawn after the full stack; tooltip shows count + % of row per segment
+  - Doughnut chart (Application Type): % label on each arc segment ≥4%; legend shows type name + count
+  - Stat cards: Unmatched and Critical show `% of total jobs` in sub-text, updated when plan perspective changes
+  - All bar chart tooltips show: jobs count + % of total
