@@ -148,6 +148,9 @@ cargo fmt                      # auto-format
 ```
 - Can click on dashboard `Job by domain` goto tab job and search with current criteria ex. current doamin -> search by domain , current sub domain -> search by domain and sub domain
 - Tab job
+  - Clicking the Jobs tab directly calls `applyFilters()` on mount so the table is populated immediately
+  - **Clear All** button (`clearAllFilters()`) resets all filter state + DOM inputs via `resetAllJobFilters()`, resets to page 1, then re-runs `applyFilters()`
+  - `CL_ORDER` is an alias of `EAL_CL_ORDER` — do not remove it; it is used by the criticality level dropdown sort in the Jobs tab
   -add dropdown filter `app_port_application_plan` 
   -table result add column `sub domain` which use logic
 ```
