@@ -199,6 +199,11 @@ cargo fmt                      # auto-format
     - Click same pill again → clears filter and restores all apps (toggle)
     - One filter active per domain at a time; switching type clears the previous filter
     - Implemented in `ealFilter(domId, type, val)`; app cards carry `data-cl` and `data-pl` attributes for targeting
+  - **App card click → Jobs tab**: clicking any app card calls `ealAppClick(el)` → `navigateToJobs(domain, '', appCode)`
+    - Pre-filters Jobs tab by domain + app code; reuses same navigation function as other dashboard drill-downs
+    - `data-dom` and `data-ac` stored as HTML attributes (escaped via `escHtml`) to avoid inline JS escaping issues
+    - Hover: card lifts with stronger shadow, app code label turns blue (`var(--primary)`) to signal interactivity
+    - Tooltip shows full app details + "Click to view Control-M jobs"
   - **Phone-book side-nav**: sticky left sidebar (`176px`, `position:sticky; top:112px`) listing all domains with colored dot + app count
     - Clicking a domain entry calls `ealNavJump(id)` → smooth scrolls to that domain block
     - Scroll spy via `window._ealScrollFn` (passive scroll listener): highlights the topmost visible domain; auto-scrolls the nav to keep active item in view

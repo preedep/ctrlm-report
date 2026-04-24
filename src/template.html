@@ -483,8 +483,9 @@
     .eal-div-hdr::after { content:''; flex:1; height:1px; background:#e2e8f0; }
     .eal-app-grid { display:flex; flex-wrap:wrap; gap:4px; padding-left:2px; }
 
-    .eal-app { display:inline-flex; align-items:center; gap:5px; padding:3px 8px 3px 7px; border-radius:6px; background:#fff; border:1px solid #e2e8f0; border-left-width:3px; box-shadow:0 1px 2px rgba(0,0,0,0.04); cursor:default; transition:box-shadow 0.12s, transform 0.12s, opacity 0.15s; }
-    .eal-app:hover { box-shadow:0 4px 12px rgba(0,0,0,0.1); transform:translateY(-1px); }
+    .eal-app { display:inline-flex; align-items:center; gap:5px; padding:3px 8px 3px 7px; border-radius:6px; background:#fff; border:1px solid #e2e8f0; border-left-width:3px; box-shadow:0 1px 2px rgba(0,0,0,0.04); cursor:pointer; transition:box-shadow 0.12s, transform 0.12s, opacity 0.15s; }
+    .eal-app:hover { box-shadow:0 4px 14px rgba(0,0,0,0.13); transform:translateY(-1px); border-color:#94a3b8; }
+    .eal-app:hover .eal-app-code { color:var(--primary); }
     .eal-app-code { font-size:0.73rem; font-weight:700; color:#1e293b; white-space:nowrap; }
     .eal-cl-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
     .eal-app.eal-dim { opacity:0.12; box-shadow:none !important; transform:none !important; }
@@ -1666,8 +1667,8 @@ function buildEALandscape() {
           const planColor = ealPlanColor(app.pl);
           const clColor   = EAL_CL_COLOR[app.cl] || '#94a3b8';
           const plKey     = (app.pl || 'no plan').toLowerCase();
-          const tip       = [app.ai, app.cl, app.pl].filter(Boolean).join(' · ');
-          html += `<div class="eal-app" data-cl="${escHtml(app.cl)}" data-pl="${escHtml(plKey)}" style="border-left-color:${planColor}" title="${escHtml(tip)}">`;
+          const tip       = [app.ai, app.cl, app.pl].filter(Boolean).join(' · ') + '\nClick to view Control-M jobs';
+          html += `<div class="eal-app" data-cl="${escHtml(app.cl)}" data-pl="${escHtml(plKey)}" data-dom="${escHtml(app.dom)}" data-ac="${escHtml(app.ac)}" onclick="ealAppClick(this)" style="border-left-color:${planColor}" title="${escHtml(tip)}">`;
           html += `<span class="eal-app-code">${escHtml(app.ac)}</span>`;
           if (app.cl) html += `<span class="eal-cl-dot" style="background:${clColor}"></span>`;
           html += `</div>`;
@@ -1710,6 +1711,10 @@ function ealNavJump(id) {
   if (!el) return;
   const top = el.getBoundingClientRect().top + window.scrollY - 120;
   window.scrollTo({ top, behavior: 'smooth' });
+}
+
+function ealAppClick(el) {
+  navigateToJobs(el.dataset.dom, '', el.dataset.ac);
 }
 
 function ealFilter(domId, type, val) {
