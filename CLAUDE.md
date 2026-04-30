@@ -284,9 +284,10 @@ cargo fmt                      # auto-format
   - **Doughnut chart** (`mig-donut`): 3 segments — Done / In Progress / Not Started — all sized relative to total CTM jobs; % labels shown on segments ≥4% wide; "Not Started" slice uses dark label (light gray background); tooltip shows count + % of all CTM jobs
   - **Progress bar** (`mig-progress-fill`): animated green gradient; tracks done / total CTM jobs; center % label in doughnut matches
   - **Migration jobs table**: columns — Job Name, SR No (badge), Status (dot pill), DAG Name (monospace), App Code, Domain; domain and app code joined from `DATA` via `planJobIndex`
-    - Every row is clickable (`cursor:pointer`); `data-jn` and `data-ac` attributes stored on `<tr>` to avoid inline JS escaping issues
-    - Click calls `navigateMigRow(el)`: if `data-ac` is non-empty → `navigateToJobs('', '', ac)` (filters Jobs tab by app code, showing all jobs for that application); if `data-ac` is empty → falls back to job-name free-text search
-    - `↗` suffix on the job name cell signals interactivity; tooltip says "Click to view jobs for this app code in Jobs tab"
+    - `data-jn` and `data-ac` stored on `<tr>`; the row itself is not clickable — navigation is cell-level
+    - **Job Name cell** (`cursor:pointer`, `↗` suffix): click calls `navigateMigByField(tr, 'jn')` → resets all Jobs tab filters, sets `searchQuery` to the job name, shows only that job; tooltip "Click to search this job in Jobs tab"
+    - **App Code cell** (`cursor:pointer`, `↗` suffix on badge): click calls `navigateMigByField(tr, 'ac')` → `navigateToJobs('', '', ac)`, filtering Jobs tab to all jobs for that application; cell renders `—` with no onclick when app code is absent; tooltip "Click to filter by app code in Jobs tab"
+    - `navigateMigByField(tr, field)` reads `data-jn` / `data-ac` from the `<tr>` via `this.closest('tr')`
   - **Search** across job name / SR no / DAG name; **status filter** dropdown; **Export CSV** (`exportMigCSV()`)
   - Tab badge shows `PLAN_DATA.length` (jobs currently in the plan file)
   - JS entry point: `buildMigrationDashboard()` called once at startup; `renderMigTable()` handles search/filter/pagination; state vars: `migStatusFilter`, `migSearch`, `migPage`, `migDonutInst`

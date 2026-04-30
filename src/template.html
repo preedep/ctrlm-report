@@ -2508,14 +2508,15 @@ function navigateToJobsByPlanApp(perspVal, plan, appCode) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function navigateMigRow(el) {
-  const ac = el.dataset.ac;
-  if (ac) {
+function navigateMigByField(tr, field) {
+  const jn = tr.dataset.jn;
+  const ac = tr.dataset.ac;
+  if (field === 'ac' && ac) {
     navigateToJobs('', '', ac);
   } else {
     resetAllJobFilters();
-    searchQuery = (el.dataset.jn || '').toLowerCase();
-    document.getElementById('search-input').value = el.dataset.jn || '';
+    searchQuery = (jn || '').toLowerCase();
+    document.getElementById('search-input').value = jn || '';
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     document.querySelector('[data-tab="jobs"]').classList.add('active');
@@ -3144,12 +3145,17 @@ function renderMigTable() {
         ? `<span style="font-family:ui-monospace,monospace;font-size:0.78rem;color:#334155">${escHtml(d.dn)}</span>`
         : `<span style="color:#94a3b8;font-style:italic">—</span>`;
       const domCell = job.dom ? escHtml(stripPrefix(job.dom)) : `<span style="color:#94a3b8">—</span>`;
-      return `<tr style="cursor:pointer" data-jn="${escHtml(d.jn)}" data-ac="${escHtml(job.ac||'')}" onclick="navigateMigRow(this)" title="Click to view jobs for this app code in Jobs tab">
-        <td class="job-name">${escHtml(d.jn)} <span style="font-size:0.68rem;color:#94a3b8;font-weight:400">↗</span></td>
+      const acCell  = job.ac
+        ? `<td style="cursor:pointer" onclick="navigateMigByField(this.closest('tr'),'ac')" title="Click to filter by app code in Jobs tab">` +
+          `<span class="badge badge-blue">${escHtml(job.ac)}</span> <span style="font-size:0.68rem;color:#94a3b8;font-weight:400">↗</span></td>`
+        : `<td><span style="color:#94a3b8">—</span></td>`;
+      return `<tr data-jn="${escHtml(d.jn)}" data-ac="${escHtml(job.ac||'')}">
+        <td class="job-name" style="cursor:pointer" onclick="navigateMigByField(this.closest('tr'),'jn')" title="Click to search this job in Jobs tab">
+          ${escHtml(d.jn)} <span style="font-size:0.68rem;color:#94a3b8;font-weight:400">↗</span></td>
         <td><span class="badge badge-blue">${escHtml(d.sr)}</span></td>
         <td>${badge}</td>
         <td style="max-width:320px">${dagCell}</td>
-        <td>${escHtml(job.ac||'')}</td>
+        ${acCell}
         <td>${domCell}</td>
       </tr>`;
     }).join('');
