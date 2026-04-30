@@ -219,6 +219,10 @@
     tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
     tbody tr:last-child { border-bottom: none; }
     tbody tr:hover { background: #f8fafc; }
+    tbody tr.mig-done       { background: #f0fdf4; }
+    tbody tr.mig-done:hover { background: #dcfce7; }
+    tbody tr.mig-inprog       { background: #fffbeb; }
+    tbody tr.mig-inprog:hover { background: #fef3c7; }
 
     tbody td {
       padding: 0.625rem 1rem; font-size: 0.8125rem; color: var(--text);
@@ -1161,6 +1165,14 @@ function planBadge(p) {
   if (!p) return '<span class="badge badge-gray">—</span>';
   const cls = PLAN_BADGE[p] || 'badge-gray';
   return `<span class="badge ${cls}">${escHtml(p)}</span>`;
+}
+
+function migStatusBadge(jn) {
+  const p = migPlanIndex[jn];
+  if (!p) return '<span style="color:#94a3b8">—</span>';
+  if (p.st === 'Done')        return '<span class="badge badge-green">Done</span>';
+  if (p.st === 'In Progress') return '<span class="badge badge-orange">In Progress</span>';
+  return `<span class="badge badge-gray">${escHtml(p.st || '—')}</span>`;
 }
 
 // ── Init header ──
@@ -2496,6 +2508,24 @@ function navigateToJobsByPlanApp(perspVal, plan, appCode) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+function navigateMigRow(el) {
+  const ac = el.dataset.ac;
+  if (ac) {
+    navigateToJobs('', '', ac);
+  } else {
+    resetAllJobFilters();
+    searchQuery = (el.dataset.jn || '').toLowerCase();
+    document.getElementById('search-input').value = el.dataset.jn || '';
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.querySelector('[data-tab="jobs"]').classList.add('active');
+    document.getElementById('tab-jobs').classList.add('active');
+    currentPage = 1;
+    applyFilters();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
 // ── Initial dashboard render ──
 rebuildDashboardData();
 rebuildPlanStackedChart();
@@ -2584,7 +2614,7 @@ const allCLs = [...new Set(DATA.map(r => r.cl || ''))].filter(Boolean);
 const thead = document.getElementById('jobs-thead');
 thead.innerHTML = COLUMNS.map(col =>
   `<th class="sortable" data-col="${col.key}">${col.label}</th>`
-).join('');
+).join('') + '<th>Migration</th>';
 
 thead.querySelectorAll('th').forEach(th => {
   th.addEventListener('click', () => {
@@ -2710,8 +2740,12 @@ function renderTable() {
     const appCode    = row.ac
       ? `<span class="badge badge-blue">${escHtml(row.ac)}</span>`
       : '<span class="no-app-code">—</span>';
+    const migEntry   = migPlanIndex[row.jn];
+    const rowCls     = migEntry
+      ? (migEntry.st === 'Done' ? ' class="mig-done"' : migEntry.st === 'In Progress' ? ' class="mig-inprog"' : '')
+      : '';
 
-    return `<tr>
+    return `<tr${rowCls}>
       <td class="job-name" title="${escHtml(row.jn)}">${escHtml(row.jn) || '—'}</td>
       <td title="${escHtml(row.fo)}">${escHtml(row.fo) || '—'}</td>
       <td title="${escHtml(row.ap)}">${escHtml(row.ap) || '—'}</td>
@@ -2726,6 +2760,7 @@ function renderTable() {
       <td>${critBadge(row.cr)}</td>
       <td>${escHtml(row.pr) || '—'}</td>
       <td>${escHtml(row.cl) || '—'}</td>
+      <td>${migStatusBadge(row.jn)}</td>
     </tr>`;
   }).join('');
 }
@@ -3065,6 +3100,10 @@ const MIG_STATUS_STYLE = {
 const planJobIndex = {};
 DATA.forEach(j => { if (j.jn) planJobIndex[j.jn] = j; });
 
+// Index PLAN_DATA by job name for Jobs tab row highlighting
+const migPlanIndex = {};
+PLAN_DATA.forEach(d => { if (d.jn) migPlanIndex[d.jn] = d; });
+
 let migStatusFilter = '';
 let migSearch = '';
 let migPage = 1;
@@ -3105,8 +3144,8 @@ function renderMigTable() {
         ? `<span style="font-family:ui-monospace,monospace;font-size:0.78rem;color:#334155">${escHtml(d.dn)}</span>`
         : `<span style="color:#94a3b8;font-style:italic">—</span>`;
       const domCell = job.dom ? escHtml(stripPrefix(job.dom)) : `<span style="color:#94a3b8">—</span>`;
-      return `<tr>
-        <td class="job-name">${escHtml(d.jn)}</td>
+      return `<tr style="cursor:pointer" data-jn="${escHtml(d.jn)}" data-ac="${escHtml(job.ac||'')}" onclick="navigateMigRow(this)" title="Click to view jobs for this app code in Jobs tab">
+        <td class="job-name">${escHtml(d.jn)} <span style="font-size:0.68rem;color:#94a3b8;font-weight:400">↗</span></td>
         <td><span class="badge badge-blue">${escHtml(d.sr)}</span></td>
         <td>${badge}</td>
         <td style="max-width:320px">${dagCell}</td>

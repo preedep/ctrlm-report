@@ -272,6 +272,10 @@ cargo fmt                      # auto-format
       - Domain columns use the same `domainColorMap` colors for visual consistency across all perspectives
     - `domainColorMap` is built in `buildEALandscape()` (sorted by domain app count) and passed to `buildEALByITDiv()` / `buildEALByLayer()` to ensure consistent domain colors across all perspectives
     - `setupEALScrollSpy()` is called at the end of `buildEALandscape()`, `buildEALByITDiv()`, and `buildEALByLayer()` to wire up the scroll spy after any rebuild
+- Tab job — **Migration column**: a "Migration" column is appended to the Jobs table (non-sortable) showing a green `Done` badge, amber `In Progress` badge, or `—` based on `migPlanIndex[row.jn]`
+  - Row highlight: rows with a plan entry receive a CSS class — `mig-done` (light green background) for Done, `mig-inprog` (light amber background) for In Progress
+  - `migPlanIndex` is a top-level `const` built once at startup: `PLAN_DATA.forEach(d => migPlanIndex[d.jn] = d)` — keyed by job name for O(1) lookup in `renderTable()`
+  - `migStatusBadge(jn)` reads `migPlanIndex` and returns the correct badge HTML; defined near other badge helpers
 - Tab `CTM Migration` — shows progress of Control-M → Airflow migration against **all** CTM jobs as the baseline (not just jobs in the plan file)
   - Data source: `PLAN_DATA` (from `dataset/output_controlm_plan.json`); enriched by joining on `jn` against `DATA` for domain + app code context
   - Status values: `Done` (green), `In Progress` (amber); anything else falls through as unstyled
@@ -280,6 +284,9 @@ cargo fmt                      # auto-format
   - **Doughnut chart** (`mig-donut`): 3 segments — Done / In Progress / Not Started — all sized relative to total CTM jobs; % labels shown on segments ≥4% wide; "Not Started" slice uses dark label (light gray background); tooltip shows count + % of all CTM jobs
   - **Progress bar** (`mig-progress-fill`): animated green gradient; tracks done / total CTM jobs; center % label in doughnut matches
   - **Migration jobs table**: columns — Job Name, SR No (badge), Status (dot pill), DAG Name (monospace), App Code, Domain; domain and app code joined from `DATA` via `planJobIndex`
+    - Every row is clickable (`cursor:pointer`); `data-jn` and `data-ac` attributes stored on `<tr>` to avoid inline JS escaping issues
+    - Click calls `navigateMigRow(el)`: if `data-ac` is non-empty → `navigateToJobs('', '', ac)` (filters Jobs tab by app code, showing all jobs for that application); if `data-ac` is empty → falls back to job-name free-text search
+    - `↗` suffix on the job name cell signals interactivity; tooltip says "Click to view jobs for this app code in Jobs tab"
   - **Search** across job name / SR no / DAG name; **status filter** dropdown; **Export CSV** (`exportMigCSV()`)
   - Tab badge shows `PLAN_DATA.length` (jobs currently in the plan file)
   - JS entry point: `buildMigrationDashboard()` called once at startup; `renderMigTable()` handles search/filter/pagination; state vars: `migStatusFilter`, `migSearch`, `migPage`, `migDonutInst`
