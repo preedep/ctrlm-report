@@ -624,6 +624,13 @@
     Jobs
     <span class="tab-badge" id="jobs-badge">—</span>
   </button>
+  <button class="tab-btn" data-tab="migration">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M5 12h14M12 5l7 7-7 7"/>
+    </svg>
+    CTM Migration
+    <span class="tab-badge" id="migration-badge">—</span>
+  </button>
 </nav>
 
 <!-- ── EA Landscape Tab ── -->
@@ -911,6 +918,134 @@
   </main>
 </div>
 
+<!-- ── CTM Migration Tab ── -->
+<div class="tab-content" id="tab-migration">
+  <main>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card blue">
+        <div class="stat-icon">📊</div>
+        <div class="stat-body">
+          <div class="label">Total CTM Jobs</div>
+          <div class="value" id="mig-stat-total">—</div>
+          <div class="sub" id="mig-stat-total-sub">All Control-M jobs</div>
+        </div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-icon">✅</div>
+        <div class="stat-body">
+          <div class="label">Done</div>
+          <div class="value" id="mig-stat-done">—</div>
+          <div class="sub" id="mig-stat-done-pct">—</div>
+        </div>
+      </div>
+      <div class="stat-card orange">
+        <div class="stat-icon">🔄</div>
+        <div class="stat-body">
+          <div class="label">In Progress</div>
+          <div class="value" id="mig-stat-inprog">—</div>
+          <div class="sub" id="mig-stat-inprog-pct">—</div>
+        </div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-icon">⏳</div>
+        <div class="stat-body">
+          <div class="label">Not Started</div>
+          <div class="value" id="mig-stat-notstarted">—</div>
+          <div class="sub" id="mig-stat-notstarted-pct">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart + Table row -->
+    <div style="display:grid;grid-template-columns:260px 1fr;gap:1.5rem;align-items:start">
+
+      <!-- Status doughnut -->
+      <div class="chart-card" style="display:flex;flex-direction:column;align-items:center;gap:1rem">
+        <h2 style="align-self:flex-start;margin-bottom:0">Migration Status</h2>
+        <p style="font-size:0.7rem;color:var(--text-muted);align-self:flex-start;margin-top:-0.5rem">vs. all CTM jobs</p>
+        <div style="position:relative;width:180px;height:180px">
+          <canvas id="mig-donut"></canvas>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none">
+            <span id="mig-progress-pct" style="font-size:1.5rem;font-weight:700;color:var(--text)">—</span>
+            <span style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em">complete</span>
+          </div>
+        </div>
+        <!-- Progress bar -->
+        <div style="width:100%">
+          <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted);margin-bottom:4px">
+            <span>Progress</span>
+            <span id="mig-progress-label">—</span>
+          </div>
+          <div style="height:8px;background:#e2e8f0;border-radius:9999px;overflow:hidden">
+            <div id="mig-progress-fill" style="height:100%;background:linear-gradient(90deg,#10b981,#34d399);border-radius:9999px;width:0%;transition:width 0.6s ease"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Migration jobs table -->
+      <div class="section-card" style="margin-bottom:0">
+        <div style="padding:1rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem">
+          <div>
+            <h2 style="font-size:0.875rem;font-weight:600;margin:0">Migration Jobs</h2>
+            <p style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">Control-M → Airflow (Managed Airflow)</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+            <div class="search-wrap" style="min-width:220px">
+              <span class="search-icon">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                </svg>
+              </span>
+              <input type="text" id="mig-search" class="search-input" placeholder="Search job, SR, DAG…"
+                oninput="migSearch=this.value;migPage=1;renderMigTable()">
+            </div>
+            <select id="mig-status-filter" class="filter-select"
+              onchange="migStatusFilter=this.value;migPage=1;renderMigTable()">
+              <option value="">All Statuses</option>
+              <option value="Done">Done</option>
+              <option value="In Progress">In Progress</option>
+            </select>
+            <button class="btn-export-csv" onclick="exportMigCSV()" title="Export to CSV">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Export CSV
+            </button>
+            <span class="result-info" id="mig-result-info"></span>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Job Name</th>
+                <th>SR No</th>
+                <th>Status</th>
+                <th>DAG Name</th>
+                <th>App Code</th>
+                <th>Domain</th>
+              </tr>
+            </thead>
+            <tbody id="mig-tbody"></tbody>
+          </table>
+          <div id="mig-empty" class="empty-state" style="display:none">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            <p style="font-weight:500;margin-bottom:0.25rem">No jobs found</p>
+            <p style="font-size:0.75rem">Try adjusting your search or filters</p>
+          </div>
+        </div>
+        <div class="pagination" id="mig-pagination"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
 <!-- Chart Expand Modal -->
 <div class="chart-modal-overlay" id="chart-modal-overlay" onclick="closeChartModal()">
   <div class="chart-modal" onclick="event.stopPropagation()">
@@ -932,6 +1067,7 @@
 // ── Embedded data ──
 const DATA = __DATA__;
 const APP_DATA = __APP_DATA__;
+const PLAN_DATA = __PLAN_DATA__;
 const GEN_TIME = __GEN_TIME__;
 
 // Build per-app Control-M job count (used by EA Landscape highlight toggle)
@@ -2918,6 +3054,155 @@ function expandPlanChart() {
     });
   });
 }
+
+// ── CTM Migration Dashboard ──
+const MIG_STATUS_STYLE = {
+  'Done':        { bg: '#d1fae5', fg: '#065f46', dot: '#10b981' },
+  'In Progress': { bg: '#fef3c7', fg: '#92400e', dot: '#f59e0b' },
+};
+
+// Index DATA by job name for domain/app-code lookup
+const planJobIndex = {};
+DATA.forEach(j => { if (j.jn) planJobIndex[j.jn] = j; });
+
+let migStatusFilter = '';
+let migSearch = '';
+let migPage = 1;
+const migPageSize = 20;
+let migDonutInst = null;
+
+function getMigFiltered() {
+  const q = migSearch.trim().toLowerCase();
+  return PLAN_DATA.filter(d => {
+    if (migStatusFilter && d.st !== migStatusFilter) return false;
+    if (q) return (d.jn||'').toLowerCase().includes(q)
+               || (d.sr||'').toLowerCase().includes(q)
+               || (d.dn||'').toLowerCase().includes(q);
+    return true;
+  });
+}
+
+function renderMigTable() {
+  const filtered = getMigFiltered();
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / migPageSize));
+  migPage = Math.min(migPage, totalPages);
+  const slice = filtered.slice((migPage - 1) * migPageSize, migPage * migPageSize);
+
+  const tbody = document.getElementById('mig-tbody');
+  const empty = document.getElementById('mig-empty');
+  if (!slice.length) {
+    tbody.innerHTML = '';
+    empty.style.display = '';
+  } else {
+    empty.style.display = 'none';
+    tbody.innerHTML = slice.map(d => {
+      const job = planJobIndex[d.jn] || {};
+      const sc = MIG_STATUS_STYLE[d.st] || { bg: '#f1f5f9', fg: '#64748b', dot: '#94a3b8' };
+      const badge = `<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:9999px;background:${sc.bg};color:${sc.fg};font-size:0.72rem;font-weight:600;white-space:nowrap">` +
+        `<span style="width:6px;height:6px;border-radius:50%;background:${sc.dot};flex-shrink:0"></span>${escHtml(d.st)}</span>`;
+      const dagCell = d.dn
+        ? `<span style="font-family:ui-monospace,monospace;font-size:0.78rem;color:#334155">${escHtml(d.dn)}</span>`
+        : `<span style="color:#94a3b8;font-style:italic">—</span>`;
+      const domCell = job.dom ? escHtml(stripPrefix(job.dom)) : `<span style="color:#94a3b8">—</span>`;
+      return `<tr>
+        <td class="job-name">${escHtml(d.jn)}</td>
+        <td><span class="badge badge-blue">${escHtml(d.sr)}</span></td>
+        <td>${badge}</td>
+        <td style="max-width:320px">${dagCell}</td>
+        <td>${escHtml(job.ac||'')}</td>
+        <td>${domCell}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  document.getElementById('mig-result-info').textContent =
+    `${total.toLocaleString()} of ${PLAN_DATA.length.toLocaleString()} jobs`;
+
+  // Pagination
+  const pages = [];
+  for (let i = 1; i <= totalPages; i++) pages.push(i);
+  document.getElementById('mig-pagination').innerHTML = totalPages <= 1 ? '' :
+    pages.map(p => `<button class="page-btn${p === migPage ? ' active' : ''}" onclick="migPage=${p};renderMigTable()">${p}</button>`).join('');
+}
+
+function buildMigrationDashboard() {
+  const allJobs  = DATA.length;
+  const done     = PLAN_DATA.filter(d => d.st === 'Done').length;
+  const inProg   = PLAN_DATA.filter(d => d.st === 'In Progress').length;
+  const notStart = allJobs - done - inProg;
+  const donePct  = allJobs ? Math.round(done / allJobs * 100) : 0;
+
+  document.getElementById('migration-badge').textContent = PLAN_DATA.length;
+  document.getElementById('mig-stat-total').textContent     = allJobs.toLocaleString();
+  document.getElementById('mig-stat-total-sub').textContent = PLAN_DATA.length.toLocaleString() + ' jobs tracked in plan';
+  document.getElementById('mig-stat-done').textContent      = done.toLocaleString();
+  document.getElementById('mig-stat-done-pct').textContent  = donePct + '% of all CTM jobs';
+  document.getElementById('mig-stat-inprog').textContent    = inProg.toLocaleString();
+  document.getElementById('mig-stat-inprog-pct').textContent = (allJobs ? Math.round(inProg / allJobs * 100) : 0) + '% of all CTM jobs';
+  document.getElementById('mig-stat-notstarted').textContent = notStart.toLocaleString();
+  document.getElementById('mig-stat-notstarted-pct').textContent = (allJobs ? Math.round(notStart / allJobs * 100) : 0) + '% of all CTM jobs';
+  document.getElementById('mig-progress-pct').textContent   = donePct + '%';
+  document.getElementById('mig-progress-label').textContent = done.toLocaleString() + ' / ' + allJobs.toLocaleString() + ' jobs';
+  document.getElementById('mig-progress-fill').style.width  = donePct + '%';
+
+  if (migDonutInst) { migDonutInst.destroy(); migDonutInst = null; }
+  const ctx = document.getElementById('mig-donut').getContext('2d');
+  migDonutInst = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Done', 'In Progress', 'Not Started'],
+      datasets: [{
+        data: [done, inProg, notStart],
+        backgroundColor: ['#10b981', '#f59e0b', '#e2e8f0'],
+        borderWidth: 0,
+        hoverOffset: 4,
+      }],
+    },
+    options: {
+      cutout: '68%',
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 10, usePointStyle: true } },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const v = ctx.parsed;
+              const pct = allJobs ? Math.round(v / allJobs * 100) : 0;
+              return ' ' + ctx.label + ': ' + v.toLocaleString() + ' jobs (' + pct + '%)';
+            },
+          },
+        },
+        datalabels: {
+          display: ctx => {
+            const v = ctx.dataset.data[ctx.dataIndex];
+            return allJobs ? (v / allJobs) >= 0.04 : false;
+          },
+          color: ctx => ctx.dataIndex === 2 ? '#64748b' : '#fff',
+          font: { weight: '700', size: 11 },
+          formatter: (v) => allJobs ? Math.round(v / allJobs * 100) + '%' : '',
+        },
+      },
+    },
+  });
+
+  renderMigTable();
+}
+
+function exportMigCSV() {
+  const cols = ['Job Name', 'SR No', 'Status', 'DAG Name', 'App Code', 'Domain'];
+  const rows = getMigFiltered().map(d => {
+    const job = planJobIndex[d.jn] || {};
+    return [d.jn, d.sr, d.st, d.dn, job.ac||'', job.dom ? stripPrefix(job.dom) : '']
+      .map(v => '"' + String(v||'').replace(/"/g,'""') + '"').join(',');
+  });
+  const blob = new Blob([cols.join(',') + '\n' + rows.join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'ctm-migration-plan.csv';
+  a.click();
+}
+
+buildMigrationDashboard();
 
 // ── Initial render ──
 applyFilters();

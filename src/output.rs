@@ -1,4 +1,4 @@
-use crate::model::{AppInventory, Job};
+use crate::model::{AppInventory, CtrlmPlan, Job};
 use anyhow::Result;
 use serde::Serialize;
 use std::fs;
@@ -106,14 +106,46 @@ impl<'a> ReportAppItem<'a> {
     }
 }
 
+// Compact representation of a CTM migration plan item.
+#[derive(Debug, Serialize)]
+struct ReportPlanItem<'a> {
+    #[serde(rename = "jn")]
+    job_name: &'a str,
+    #[serde(rename = "sr")]
+    sr_no: &'a str,
+    #[serde(rename = "st")]
+    status: &'a str,
+    #[serde(rename = "dn")]
+    dag_name: &'a str,
+}
+
+impl<'a> ReportPlanItem<'a> {
+    fn from_plan(p: &'a CtrlmPlan) -> Self {
+        Self {
+            job_name: &p.control_m_job_name,
+            sr_no: &p.sr_no,
+            status: &p.status,
+            dag_name: &p.dag_name,
+        }
+    }
+}
+
 const TEMPLATE: &str = include_str!("template.html");
 
-pub fn generate_report(jobs: &[Job], app_inventory: &[AppInventory], output_path: &Path) -> Result<()> {
+pub fn generate_report(
+    jobs: &[Job],
+    app_inventory: &[AppInventory],
+    plan: &[CtrlmPlan],
+    output_path: &Path,
+) -> Result<()> {
     let report_jobs: Vec<ReportJob<'_>> = jobs.iter().map(ReportJob::from_job).collect();
     let data_json = serde_json::to_string(&report_jobs)?;
 
     let report_apps: Vec<ReportAppItem<'_>> = app_inventory.iter().map(ReportAppItem::from_inventory).collect();
     let app_data_json = serde_json::to_string(&report_apps)?;
+
+    let report_plan: Vec<ReportPlanItem<'_>> = plan.iter().map(ReportPlanItem::from_plan).collect();
+    let plan_data_json = serde_json::to_string(&report_plan)?;
 
     let gen_time = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -123,6 +155,7 @@ pub fn generate_report(jobs: &[Job], app_inventory: &[AppInventory], output_path
     let html = TEMPLATE
         .replace("__DATA__", &data_json)
         .replace("__APP_DATA__", &app_data_json)
+        .replace("__PLAN_DATA__", &plan_data_json)
         .replace("__GEN_TIME__", &gen_time.to_string());
 
     fs::write(output_path, html)?;

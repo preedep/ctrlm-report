@@ -25,6 +25,18 @@ pub struct AppInventory {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct CtrlmPlan {
+    #[serde(default)]
+    pub control_m_job_name: String,
+    #[serde(default)]
+    pub sr_no: String,
+    #[serde(default)]
+    pub status: String,
+    #[serde(default)]
+    pub dag_name: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Job {
     #[serde(default)]
     pub app_port_app_code: String,

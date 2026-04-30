@@ -6,7 +6,7 @@
 
 `ctrlm-report` is a Rust binary crate (edition 2024). Its purpose is to generate self-contained HTML reports for `ctrlm` (control-m) workflows.
 
-It reads `dataset/output.json` (Control-M jobs) and `dataset/output_app_inventory.json` (full application portfolio), embeds both datasets into `src/template.html`, and writes a standalone `report.html` — no server required.
+It reads `dataset/output.json` (Control-M jobs), `dataset/output_app_inventory.json` (full application portfolio), and `dataset/output_controlm_plan.json` (CTM→Airflow migration plan), embeds all three datasets into `src/template.html`, and writes a standalone `report.html` — no server required.
 
 
 
@@ -16,9 +16,9 @@ It reads `dataset/output.json` (Control-M jobs) and `dataset/output_app_inventor
 - Keep I/O at the edges; pure logic in the middle.
 - Module layout:
   - `main.rs` — CLI arg parsing via `clap`, wires `input` → `output`
-  - `input.rs` — `load_jobs()` deserializes `output.json` into `Vec<Job>`; `load_app_inventory()` deserializes `output_app_inventory.json` into `Vec<AppInventory>`
-  - `model.rs` — `Job` struct (Control-M job + app portfolio fields); `AppInventory` struct (app portfolio only)
-  - `output.rs` — builds compact `ReportJob` and `ReportAppItem` (short serde keys to reduce size), serializes to JSON, and injects into `template.html` via `__DATA__` / `__APP_DATA__` / `__GEN_TIME__` placeholders
+  - `input.rs` — `load_jobs()` deserializes `output.json` into `Vec<Job>`; `load_app_inventory()` deserializes `output_app_inventory.json` into `Vec<AppInventory>`; `load_controlm_plan()` deserializes `output_controlm_plan.json` into `Vec<CtrlmPlan>`
+  - `model.rs` — `Job` struct (Control-M job + app portfolio fields); `AppInventory` struct (app portfolio only); `CtrlmPlan` struct (migration plan entry)
+  - `output.rs` — builds compact `ReportJob`, `ReportAppItem`, and `ReportPlanItem` (short serde keys to reduce size), serializes to JSON, and injects into `template.html` via `__DATA__` / `__APP_DATA__` / `__PLAN_DATA__` / `__GEN_TIME__` placeholders
   - `template.html` — the full HTML/JS report template, embedded at compile time via `include_str!`
 
 ## Dependencies
@@ -34,8 +34,8 @@ clap        = { version = "4", features = ["derive"] }
 ## CLI Usage
 
 ```bash
-cargo run                                                        # reads dataset/output.json + dataset/output_app_inventory.json, writes report.html
-cargo run -- -i path/to/data.json -a path/to/inventory.json -o out.html  # custom input/output paths
+cargo run                                                                          # reads all three default datasets, writes report.html
+cargo run -- -i path/to/data.json -a path/to/inventory.json -p path/to/plan.json -o out.html  # custom paths
 ```
 
 
@@ -95,6 +95,21 @@ Full application portfolio — one entry per application, independent of Control
   },
 ```
 
+### Input `dataset/output_controlm_plan.json`
+
+Control-m Migration plan - information current status of each application code / job name / phase / status
+
+- Array of json 
+```
+ //example json attribute
+{
+    "control_m_job_name": "AFT_DEPOSIT_DORMANT_NOTICE_01" //control-m job name,
+    "sr_no" : "SR-55064",
+    "status" : "Done",
+    "dag_name": "scb-AP1965-CAPI-ITMX_OUTBOUND_D0001-prod"
+}
+```
+
 ## Data Mapping
 
 Application criticality level Mapping to Application Level or App level
@@ -114,7 +129,8 @@ Application criticality level Mapping to Application Level or App level
 - Derive `Debug` on all public types.
 - `ReportJob` uses short serde rename keys (`jn`, `fo`, `ap`, …) to reduce embedded JSON payload size.
 - `ReportAppItem` uses short serde rename keys (`ac`, `ai`, `pl`, `cat`, `cl`, `dom`, `div`, `oc`, `sd`, `la`) — same key conventions as `ReportJob` where fields overlap.
-- Two template placeholders: `__DATA__` → Control-M jobs (`DATA` in JS); `__APP_DATA__` → app portfolio (`APP_DATA` in JS).
+- `ReportPlanItem` uses short serde rename keys (`jn`, `sr`, `st`, `dn`) — `jn` matches `ReportJob` so the migration tab can join against `DATA` by job name.
+- Three template placeholders: `__DATA__` → Control-M jobs (`DATA` in JS); `__APP_DATA__` → app portfolio (`APP_DATA` in JS); `__PLAN_DATA__` → migration plan (`PLAN_DATA` in JS).
 
 ## Build / Test / Run
 
@@ -256,3 +272,14 @@ cargo fmt                      # auto-format
       - Domain columns use the same `domainColorMap` colors for visual consistency across all perspectives
     - `domainColorMap` is built in `buildEALandscape()` (sorted by domain app count) and passed to `buildEALByITDiv()` / `buildEALByLayer()` to ensure consistent domain colors across all perspectives
     - `setupEALScrollSpy()` is called at the end of `buildEALandscape()`, `buildEALByITDiv()`, and `buildEALByLayer()` to wire up the scroll spy after any rebuild
+- Tab `CTM Migration` — shows progress of Control-M → Airflow migration against **all** CTM jobs as the baseline (not just jobs in the plan file)
+  - Data source: `PLAN_DATA` (from `dataset/output_controlm_plan.json`); enriched by joining on `jn` against `DATA` for domain + app code context
+  - Status values: `Done` (green), `In Progress` (amber); anything else falls through as unstyled
+  - **4 stat cards**: Total CTM Jobs (`DATA.length`), Done (+ % of all CTM jobs), In Progress (+ % of all CTM jobs), Not Started = total CTM jobs − done − in-progress (+ %)
+    - Card 1 sub-text shows how many jobs are currently tracked in the plan file
+  - **Doughnut chart** (`mig-donut`): 3 segments — Done / In Progress / Not Started — all sized relative to total CTM jobs; % labels shown on segments ≥4% wide; "Not Started" slice uses dark label (light gray background); tooltip shows count + % of all CTM jobs
+  - **Progress bar** (`mig-progress-fill`): animated green gradient; tracks done / total CTM jobs; center % label in doughnut matches
+  - **Migration jobs table**: columns — Job Name, SR No (badge), Status (dot pill), DAG Name (monospace), App Code, Domain; domain and app code joined from `DATA` via `planJobIndex`
+  - **Search** across job name / SR no / DAG name; **status filter** dropdown; **Export CSV** (`exportMigCSV()`)
+  - Tab badge shows `PLAN_DATA.length` (jobs currently in the plan file)
+  - JS entry point: `buildMigrationDashboard()` called once at startup; `renderMigTable()` handles search/filter/pagination; state vars: `migStatusFilter`, `migSearch`, `migPage`, `migDonutInst`
