@@ -15,3 +15,4 @@ debug
 report.html
 dataset/*
 .DS_Store
+upload-report.sh
