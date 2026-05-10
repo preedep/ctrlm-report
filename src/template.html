@@ -69,6 +69,9 @@
       border-bottom: 1px solid var(--border);
       padding: 0 2rem;
       display: flex;
+      position: sticky;
+      top: 64px;
+      z-index: 99;
     }
 
     .tab-btn {
@@ -514,6 +517,62 @@
     .eal-highlight-mode .eal-app.eal-has-job { box-shadow:0 0 0 2px #f59e0b80, 0 2px 6px rgba(245,158,11,0.18) !important; }
     .eal-highlight-mode .eal-app.eal-has-job:hover { box-shadow:0 0 0 2px #f59e0b, 0 4px 14px rgba(245,158,11,0.3) !important; }
 
+    /* ── EA Landscape – Smart Search (autocomplete) ── */
+    .eal-search-wrap { position:relative; flex-shrink:0; }
+    .eal-search-inner { position:relative; width:264px; }
+    .eal-search-icon-wrap { position:absolute; left:9px; top:50%; transform:translateY(-50%); pointer-events:none; color:#94a3b8; display:flex; }
+    .eal-search-input { width:100%; padding:7px 30px 7px 32px; border:1.5px solid var(--border); border-radius:9px; font-size:0.8rem; color:var(--text); background:#f8fafc; outline:none; box-sizing:border-box; transition:border-color 0.14s, box-shadow 0.14s, background 0.14s; }
+    .eal-search-input:focus { border-color:var(--primary); box-shadow:0 0 0 3px #2563eb14; background:#fff; }
+    .eal-search-input::placeholder { color:#b0bec5; }
+    .eal-search-clear { position:absolute; right:7px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:#94a3b8; padding:3px; border-radius:4px; line-height:0; display:none; align-items:center; justify-content:center; }
+    .eal-search-clear:hover { background:#e2e8f0; color:#475569; }
+    .eal-search-dropdown {
+      position:absolute; top:calc(100% + 7px); right:0; min-width:360px;
+      background:#fff; border-radius:12px; border:1px solid var(--border);
+      box-shadow:0 12px 40px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.07);
+      z-index:400; overflow:hidden; display:none;
+    }
+    .eal-search-dropdown.eal-dd-open { display:block; }
+    .eal-dd-hdr { padding:9px 14px; font-size:0.62rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#94a3b8; border-bottom:1px solid #f1f5f9; }
+    .eal-dd-list { max-height:320px; overflow-y:auto; }
+    .eal-dd-item { display:flex; align-items:center; gap:10px; padding:9px 14px; cursor:pointer; border-bottom:1px solid #f8fafc; }
+    .eal-dd-item:hover { background:#f8fafc; }
+    .eal-dd-item:last-child { border-bottom:none; }
+    .eal-dd-item.eal-dd-active { background:#eff6ff; }
+    .eal-dd-item.eal-dd-active .eal-dd-ac { color:var(--primary); }
+    .eal-dd-ac { font-size:0.82rem; font-weight:700; color:#1e293b; min-width:76px; flex-shrink:0; }
+    .eal-dd-path { font-size:0.68rem; color:#94a3b8; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .eal-dd-plan { flex-shrink:0; }
+    .eal-search-highlight { animation:ealPulse 1.6s ease-out forwards; }
+    @keyframes ealPulse {
+      0%   { outline:3px solid var(--primary); outline-offset:3px; box-shadow:0 0 0 6px #2563eb28; transform:scale(1.06); }
+      60%  { outline:2px solid var(--primary); outline-offset:2px; }
+      100% { outline:none; box-shadow:0 1px 2px rgba(0,0,0,0.04); transform:none; }
+    }
+
+    /* ── EA Landscape – White-card Tooltip ── */
+    #eal-tip {
+      position:fixed; z-index:9999; pointer-events:none;
+      background:#fff; border-radius:12px; overflow:hidden;
+      box-shadow:0 8px 32px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.08);
+      max-width:256px; min-width:200px;
+      opacity:0; transition:opacity 0.13s;
+      border:1px solid #e2e8f0; border-left-width:4px;
+      font-family:inherit;
+    }
+    #eal-tip.eal-tip-vis { opacity:1; }
+    .eal-tip-head { padding:11px 14px 9px; }
+    .eal-tip-code { font-size:0.98rem; font-weight:800; color:#1e293b; letter-spacing:0.005em; }
+    .eal-tip-id { font-size:0.7rem; color:#64748b; margin-top:2px; letter-spacing:0.02em; }
+    .eal-tip-section { padding:7px 14px; border-top:1px solid #f1f5f9; }
+    .eal-tip-lbl { font-size:0.61rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:#94a3b8; margin-bottom:3px; }
+    .eal-tip-val { font-size:0.8rem; font-weight:600; color:#1e293b; line-height:1.4; }
+    .eal-tip-inline { display:flex; align-items:center; gap:6px; }
+    .eal-tip-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .eal-tip-stripe { width:12px; height:4px; border-radius:2px; flex-shrink:0; }
+    .eal-tip-ctm-badge { display:inline-flex; align-items:center; gap:4px; background:#fef3c7; color:#d97706; font-size:0.7rem; font-weight:700; padding:2px 7px; border-radius:4px; border:1px solid #fde68a; }
+    .eal-tip-footer { padding:8px 14px; background:#f8fafc; border-top:1px solid #f1f5f9; display:flex; align-items:center; gap:5px; font-size:0.69rem; color:#2563eb; font-weight:500; }
+
     /* Domain header summary pills */
     .eal-domain-summary { display:flex; flex-direction:column; gap:4px; margin-top:0.5rem; }
     .eal-summary-row { display:flex; align-items:center; flex-wrap:wrap; gap:4px; }
@@ -648,6 +707,22 @@
           <p id="eal-subtitle">Application portfolio — Domain → Sub-Domain → IT Division</p>
         </div>
         <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+          <!-- Smart Search with autocomplete -->
+          <div class="eal-search-wrap" id="eal-search-wrap">
+            <div class="eal-search-inner">
+              <span class="eal-search-icon-wrap">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+              </span>
+              <input type="text" id="eal-search-input" class="eal-search-input" placeholder="Search app code or ID…" oninput="onEALSearch(this.value)" autocomplete="off" spellcheck="false">
+              <button class="eal-search-clear" id="eal-search-clear" onclick="clearEALSearch()" title="Clear search" style="display:none">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            <div class="eal-search-dropdown" id="eal-search-dropdown">
+              <div class="eal-dd-hdr" id="eal-dd-hdr"></div>
+              <div class="eal-dd-list" id="eal-dd-list"></div>
+            </div>
+          </div>
           <div class="eal-persp-toggle">
             <button class="eal-persp-btn active" data-persp="domain" onclick="setEALPerspective('domain')">By Domain</button>
             <button class="eal-persp-btn" data-persp="itdiv" onclick="setEALPerspective('itdiv')">By IT Division</button>
@@ -1065,6 +1140,9 @@
   </div>
 </div>
 
+<!-- EA Landscape tooltip (must be before script so getElementById finds it) -->
+<div id="eal-tip" role="tooltip" aria-hidden="true"></div>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <script>
@@ -1118,6 +1196,11 @@ let critFilter     = '';
 let clFilter       = '';
 let appCodeFilter  = '';
 let dashPlan       = '';
+
+// ── EA Landscape search state (declared early to avoid TDZ in buildEALandscape) ──
+let ealSearchQuery  = '';
+let ealDdActiveIdx  = -1;
+const EAL_SEARCH_MAX = 12;
 
 // ── Mutable dashboard data ──
 let domainCounts = {};
@@ -1822,10 +1905,8 @@ function ealAppCardHtml(app) {
   const plKey     = (app.pl || 'no plan').toLowerCase();
   const jobCount  = ctrlmJobCount[app.ac] || 0;
   const hasJob    = jobCount > 0;
-  const clDisplay = EAL_CL_LABEL[app.cl] || app.cl;
-  const tip       = [app.ai, clDisplay, app.pl].filter(Boolean).join(' · ') + (hasJob ? ` · ${jobCount} CTM job${jobCount !== 1 ? 's' : ''}` : '') + '\nClick to view Control-M jobs';
   const extraCls  = hasJob ? ' eal-has-job' : '';
-  let h = `<div class="eal-app${extraCls}" data-cl="${escHtml(app.cl)}" data-pl="${escHtml(plKey)}" data-dom="${escHtml(app.dom)}" data-ac="${escHtml(app.ac)}" onclick="ealAppClick(this)" style="border-left-color:${planColor}" title="${escHtml(tip)}">`;
+  let h = `<div class="eal-app${extraCls}" data-ac="${escHtml(app.ac)}" data-ai="${escHtml(app.ai)}" data-cl="${escHtml(app.cl)}" data-pl="${escHtml(plKey)}" data-dom="${escHtml(app.dom)}" data-sd="${escHtml(app.sd)}" data-div="${escHtml(app.div)}" onclick="ealAppClick(this)" style="border-left-color:${planColor}">`;
   h += `<span class="eal-app-code">${escHtml(app.ac)}</span>`;
   if (app.cl) h += `<span class="eal-cl-dot" style="background:${clColor}"></span>`;
   if (hasJob) h += `<span class="eal-ctm-badge">${jobCount.toLocaleString()}</span>`;
@@ -1962,6 +2043,7 @@ function buildEALandscape() {
   html += '</div>';
   document.getElementById('ea-matrix-wrap').innerHTML = html;
   setupEALScrollSpy();
+  if (ealSearchQuery) renderEALSearchDropdown();
 }
 
 function buildEALByITDiv(appRegistry, domainColorMap) {
@@ -2050,6 +2132,7 @@ function buildEALByITDiv(appRegistry, domainColorMap) {
   html += '</div>';
   document.getElementById('ea-matrix-wrap').innerHTML = html;
   setupEALScrollSpy();
+  if (ealSearchQuery) renderEALSearchDropdown();
 }
 
 const EAL_LAYER_ORDER = ['channel', 'processing', 'product', 'data', 'enterprise support', 'technology foundation'];
@@ -2154,6 +2237,7 @@ function buildEALByLayer(appRegistry, domainColorMap) {
   html += '</div>';
   document.getElementById('ea-matrix-wrap').innerHTML = html;
   setupEALScrollSpy();
+  if (ealSearchQuery) renderEALSearchDropdown();
 }
 
 function ealNavJump(id) {
@@ -3248,6 +3332,201 @@ function exportMigCSV() {
 }
 
 buildMigrationDashboard();
+
+// ── EA Landscape – White-card Tooltip ──
+const ealTipEl = document.getElementById('eal-tip');
+let ealTipHideTimer;
+
+function ealShowTip(card, e) {
+  if (!ealTipEl) return;
+  clearTimeout(ealTipHideTimer);
+  const ac       = card.dataset.ac  || '';
+  const ai       = card.dataset.ai  || '';
+  const dom      = card.dataset.dom || '';
+  const sd       = card.dataset.sd  || '';
+  const div      = card.dataset.div || '';
+  const cl       = card.dataset.cl  || '';
+  const pl       = card.dataset.pl  || '';
+  const clColor  = EAL_CL_COLOR[cl] || '#94a3b8';
+  const clLabel  = EAL_CL_LABEL[cl] || cl || '—';
+  const planColor = ealPlanColor(pl);
+  const planLabel = EAL_PL_LABEL[pl.toLowerCase()] || (pl || 'No Plan');
+  const jobCount  = ctrlmJobCount[ac] || 0;
+
+  ealTipEl.style.borderLeftColor = planColor;
+
+  let html = `<div class="eal-tip-head">`;
+  html += `<div class="eal-tip-code">${escHtml(ac)}</div>`;
+  html += `<div class="eal-tip-id">${ai ? escHtml(ai) : '<span style="color:#b0bec5;font-style:italic">No App ID</span>'}</div>`;
+  html += `</div>`;
+  if (dom) html += `<div class="eal-tip-section"><div class="eal-tip-lbl">Domain</div><div class="eal-tip-val">${escHtml(stripPrefix(dom))}</div></div>`;
+  if (sd)  html += `<div class="eal-tip-section"><div class="eal-tip-lbl">Sub-domain</div><div class="eal-tip-val">${escHtml(stripPrefix(sd))}</div></div>`;
+  if (div) html += `<div class="eal-tip-section"><div class="eal-tip-lbl">IT Division</div><div class="eal-tip-val">${escHtml(div)}</div></div>`;
+  if (cl)  html += `<div class="eal-tip-section"><div class="eal-tip-lbl">Criticality</div><div class="eal-tip-inline"><span class="eal-tip-dot" style="background:${clColor}"></span><span class="eal-tip-val">${escHtml(clLabel)}</span></div></div>`;
+  html += `<div class="eal-tip-section"><div class="eal-tip-lbl">Application Plan</div><div class="eal-tip-inline"><span class="eal-tip-stripe" style="background:${planColor}"></span><span class="eal-tip-val">${escHtml(planLabel)}</span></div></div>`;
+  if (jobCount > 0) html += `<div class="eal-tip-section"><div class="eal-tip-lbl">CTM Jobs</div><span class="eal-tip-ctm-badge">&#9881; ${jobCount.toLocaleString()} job${jobCount !== 1 ? 's' : ''}</span></div>`;
+  html += `<div class="eal-tip-footer"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Click to view Control-M jobs</div>`;
+
+  ealTipEl.innerHTML = html;
+  ealTipEl.classList.add('eal-tip-vis');
+  ealPosTip(e);
+}
+
+function ealHideTip() {
+  ealTipHideTimer = setTimeout(() => { if (ealTipEl) ealTipEl.classList.remove('eal-tip-vis'); }, 90);
+}
+
+function ealPosTip(e) {
+  if (!ealTipEl) return;
+  const gap = 18, pad = 10;
+  ealTipEl.style.left = '-9999px';
+  ealTipEl.style.top  = '-9999px';
+  const w = ealTipEl.offsetWidth  || 224;
+  const h = ealTipEl.offsetHeight || 200;
+  let x = e.clientX + gap;
+  let y = e.clientY + gap;
+  if (x + w > window.innerWidth  - pad) x = e.clientX - w - gap;
+  if (y + h > window.innerHeight - pad) y = e.clientY - h - gap;
+  ealTipEl.style.left = x + 'px';
+  ealTipEl.style.top  = y + 'px';
+}
+
+const _ealWrap = document.getElementById('ea-matrix-wrap');
+if (_ealWrap) {
+  _ealWrap.addEventListener('mouseover', e => {
+    const card = e.target.closest('.eal-app');
+    if (card) ealShowTip(card, e);
+  });
+  _ealWrap.addEventListener('mouseout', e => {
+    const card = e.target.closest('.eal-app');
+    if (card && !card.contains(e.relatedTarget)) ealHideTip();
+  });
+  _ealWrap.addEventListener('mousemove', e => {
+    if (ealTipEl && ealTipEl.classList.contains('eal-tip-vis')) ealPosTip(e);
+  });
+}
+
+// ── EA Landscape – Smart Search (autocomplete dropdown) ──
+
+function onEALSearch(val) {
+  ealSearchQuery = val.trim();
+  const clearBtn = document.getElementById('eal-search-clear');
+  if (clearBtn) clearBtn.style.display = ealSearchQuery ? 'flex' : 'none';
+  if (!ealSearchQuery) {
+    const dd = document.getElementById('eal-search-dropdown');
+    if (dd) dd.classList.remove('eal-dd-open');
+    return;
+  }
+  renderEALSearchDropdown();
+}
+
+function clearEALSearch() {
+  ealSearchQuery = '';
+  ealDdActiveIdx = -1;
+  const inp      = document.getElementById('eal-search-input');
+  const clearBtn = document.getElementById('eal-search-clear');
+  const dd       = document.getElementById('eal-search-dropdown');
+  if (inp)      inp.value = '';
+  if (clearBtn) clearBtn.style.display = 'none';
+  if (dd)       dd.classList.remove('eal-dd-open');
+}
+
+function renderEALSearchDropdown() {
+  const dd   = document.getElementById('eal-search-dropdown');
+  const hdr  = document.getElementById('eal-dd-hdr');
+  const list = document.getElementById('eal-dd-list');
+  if (!dd || !hdr || !list) return;
+
+  ealDdActiveIdx = -1;
+
+  const q       = ealSearchQuery.toLowerCase();
+  const cards   = Array.from(document.querySelectorAll('#ea-matrix-wrap .eal-app'));
+  const matches = cards.filter(c =>
+    (c.dataset.ac || '').toLowerCase().includes(q) ||
+    (c.dataset.ai || '').toLowerCase().includes(q)
+  );
+
+  if (matches.length === 0) {
+    hdr.textContent = 'No results';
+    list.innerHTML = '<div style="padding:12px 14px;font-size:0.78rem;color:#94a3b8">No matching applications</div>';
+    dd.classList.add('eal-dd-open');
+    return;
+  }
+
+  const shown = matches.slice(0, EAL_SEARCH_MAX);
+  const extra = matches.length - shown.length;
+  hdr.textContent = matches.length === 1 ? '1 result' : `${matches.length} results`;
+
+  list.innerHTML = shown.map(c => {
+    const ac        = c.dataset.ac  || '';
+    const ai        = c.dataset.ai  || '';
+    const dom       = c.dataset.dom || '';
+    const pl        = c.dataset.pl  || '';
+    const planColor = ealPlanColor(pl);
+    const planLabel = EAL_PL_LABEL[pl.toLowerCase()] || (pl || 'No Plan');
+    const pathParts = [ai, stripPrefix(dom)].filter(Boolean);
+    return `<div class="eal-dd-item" data-ac="${escHtml(ac)}" onclick="ealSearchSelect(this.dataset.ac)">
+      <span class="eal-dd-ac">${escHtml(ac)}</span>
+      <span class="eal-dd-path">${escHtml(pathParts.join(' · '))}</span>
+      <span class="eal-dd-plan"><span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:0.64rem;font-weight:700;background:${planColor}1a;color:${planColor};border:1px solid ${planColor}40;white-space:nowrap">${escHtml(planLabel)}</span></span>
+    </div>`;
+  }).join('') + (extra > 0 ? `<div style="padding:8px 14px;font-size:0.68rem;color:#94a3b8;border-top:1px solid #f1f5f9">+${extra} more — refine your search</div>` : '');
+
+  dd.classList.add('eal-dd-open');
+}
+
+function ealDdSetActive(items) {
+  items.forEach((el, i) => el.classList.toggle('eal-dd-active', i === ealDdActiveIdx));
+  const active = items[ealDdActiveIdx];
+  if (active) active.scrollIntoView({ block: 'nearest' });
+}
+
+function ealSearchSelect(ac) {
+  const dd  = document.getElementById('eal-search-dropdown');
+  const inp = document.getElementById('eal-search-input');
+  if (dd)  dd.classList.remove('eal-dd-open');
+  if (inp) inp.value = ac;
+  ealSearchQuery = ac;
+
+  const card = document.querySelector(`#ea-matrix-wrap [data-ac="${ac.replace(/"/g, '\\"')}"]`);
+  if (!card) return;
+  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  card.classList.add('eal-search-highlight');
+  setTimeout(() => card.classList.remove('eal-search-highlight'), 1700);
+}
+
+// Keyboard navigation for search dropdown
+document.getElementById('eal-search-input').addEventListener('keydown', e => {
+  const dd    = document.getElementById('eal-search-dropdown');
+  const items = dd ? Array.from(dd.querySelectorAll('.eal-dd-item[data-ac]')) : [];
+
+  if (e.key === 'Escape') { clearEALSearch(); return; }
+  if (!dd || !dd.classList.contains('eal-dd-open') || items.length === 0) return;
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    ealDdActiveIdx = ealDdActiveIdx < items.length - 1 ? ealDdActiveIdx + 1 : 0;
+    ealDdSetActive(items);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    ealDdActiveIdx = ealDdActiveIdx > 0 ? ealDdActiveIdx - 1 : items.length - 1;
+    ealDdSetActive(items);
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (ealDdActiveIdx >= 0 && items[ealDdActiveIdx]) {
+      ealSearchSelect(items[ealDdActiveIdx].dataset.ac);
+    }
+  }
+});
+
+// Close dropdown when clicking outside search area
+document.addEventListener('click', e => {
+  if (!e.target.closest('#eal-search-wrap')) {
+    const dd = document.getElementById('eal-search-dropdown');
+    if (dd) dd.classList.remove('eal-dd-open');
+    ealDdActiveIdx = -1;
+  }
+});
 
 // ── Initial render ──
 applyFilters();
