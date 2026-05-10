@@ -16,3 +16,8 @@ report.html
 dataset/*
 .DS_Store
 upload-report.sh
+
+# Playwright / Node
+node_modules/
+playwright-report/
+test-results/
