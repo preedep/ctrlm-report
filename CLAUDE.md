@@ -18,7 +18,7 @@ It reads `dataset/output.json` (Control-M jobs), `dataset/output_app_inventory.j
   - `main.rs` — CLI arg parsing via `clap`, wires `input` → `output`
   - `input.rs` — `load_jobs()` deserializes `output.json` into `Vec<Job>`; `load_app_inventory()` deserializes `output_app_inventory.json` into `Vec<AppInventory>`; `load_controlm_plan()` deserializes `output_controlm_plan.json` into `Vec<CtrlmPlan>`
   - `model.rs` — `Job` struct (Control-M job + app portfolio fields); `AppInventory` struct (app portfolio only); `CtrlmPlan` struct (migration plan entry)
-  - `output.rs` — builds compact `ReportJob`, `ReportAppItem`, and `ReportPlanItem` (short serde keys to reduce size), serializes to JSON, and injects into `template.html` via `__DATA__` / `__APP_DATA__` / `__PLAN_DATA__` / `__GEN_TIME__` placeholders
+  - `output.rs` — builds compact `ReportJob`, `ReportAppItem`, and `ReportPlanItem` (short serde keys to reduce size), serializes to JSON, and injects into `template.html` via `__DATA__` / `__APP_DATA__` / `__PLAN_DATA__` / `__GEN_TIME__` / `__MSAL_CDN__` / `__AUTH_STARTUP__` placeholders; holds `AuthConfig` struct
   - `template.html` — the full HTML/JS report template, embedded at compile time via `include_str!`
 
 ## Dependencies
@@ -34,8 +34,13 @@ clap        = { version = "4", features = ["derive"] }
 ## CLI Usage
 
 ```bash
-cargo run                                                                          # reads all three default datasets, writes report.html
+cargo run                                                                          # reads all three default datasets, writes report.html (no auth)
 cargo run -- -i path/to/data.json -a path/to/inventory.json -p path/to/plan.json -o out.html  # custom paths
+
+# Build with Entra ID authentication gate (MSAL.js injected into report.html)
+cargo run -- --auth --client-id <APP_CLIENT_ID> --tenant-id <TENANT_ID>
+
+# --client-id and --tenant-id are required when --auth is set; omitting either is a build error
 ```
 
 
@@ -130,7 +135,15 @@ Application criticality level Mapping to Application Level or App level
 - `ReportJob` uses short serde rename keys (`jn`, `fo`, `ap`, …) to reduce embedded JSON payload size.
 - `ReportAppItem` uses short serde rename keys (`ac`, `ai`, `pl`, `cat`, `cl`, `dom`, `div`, `oc`, `sd`, `la`) — same key conventions as `ReportJob` where fields overlap.
 - `ReportPlanItem` uses short serde rename keys (`jn`, `sr`, `st`, `dn`) — `jn` matches `ReportJob` so the migration tab can join against `DATA` by job name.
-- Three template placeholders: `__DATA__` → Control-M jobs (`DATA` in JS); `__APP_DATA__` → app portfolio (`APP_DATA` in JS); `__PLAN_DATA__` → migration plan (`PLAN_DATA` in JS).
+- Five template placeholders injected by `output.rs`:
+  - `__DATA__` → Control-M jobs (`DATA` in JS)
+  - `__APP_DATA__` → app portfolio (`APP_DATA` in JS)
+  - `__PLAN_DATA__` → migration plan (`PLAN_DATA` in JS)
+  - `__GEN_TIME__` → Unix timestamp of report generation
+  - `__MSAL_CDN__` → MSAL.js `<script>` tag (auth build) or empty string (default)
+  - `__AUTH_STARTUP__` → async MSAL login flow with `clientId`/`tenantId` baked in (auth build) or direct `hideLoader()` call (default)
+- `AuthConfig` struct in `output.rs` carries `enabled`, `client_id`, `tenant_id`; constructed in `main.rs` from CLI flags.
+- Auth uses OAuth 2.0 Authorization Code + PKCE — no client secret is ever embedded; `clientId` and `tenantId` are public identifiers, safe to expose in HTML.
 
 ## Build / Test / Run
 
@@ -204,6 +217,16 @@ Keep these IDs in `src/template.html` — removing or renaming them will break t
 - `#mig-status-filter` — status filter dropdown
 - `#mig-export-btn` — Export CSV button
 - `#mig-donut` — doughnut chart canvas
+
+**Loading overlay**
+- `#loading-overlay` — full-screen white overlay; hidden by adding class `hidden` after all init / after auth
+- `#loader-sub-text` — subtitle text updated via `setLoaderMsg(msg)` JS helper (e.g. "Signing in…" during MSAL flow)
+
+**Auth (present in all builds; shown/populated only in `--auth` builds)**
+- `#auth-user` — user pill in header (`display:none` by default; set to `flex` after successful login)
+- `#auth-user-avatar` — initials badge inside the pill
+- `.auth-user-name` — display name span inside the pill
+- `#auth-signout-btn` — Sign out button; `onclick` wired to `msalApp.logoutRedirect()` after login
 
 ## Output
 
