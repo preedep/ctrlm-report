@@ -139,7 +139,7 @@ cargo build                    # debug build
 cargo build --release          # release build
 cargo run                      # run the binary
 cargo run -- <args>            # pass CLI arguments
-cargo test                     # run all tests
+cargo test                     # run all Rust unit tests
 cargo test <test_name>         # run a single test by name
 cargo test -- --nocapture      # show println! output during tests
 ```
@@ -151,6 +151,28 @@ cargo clippy -- -D warnings    # lint; treat warnings as errors
 cargo fmt --check              # check formatting without writing
 cargo fmt                      # auto-format
 ```
+
+## Playwright End-to-End Tests
+
+Tests live in `tests/` and target the generated `report.html`. Run `cargo run` first to (re)generate the report, then:
+
+```bash
+npm test                           # run all 184 tests headless (Chromium + WebKit)
+npx playwright test --ui           # interactive UI mode
+npx playwright test --headed       # headed browser (visible window)
+npx playwright test --debug        # step-through debugger
+npx playwright test 03-ea          # run a single spec file by name prefix
+npx playwright test --project=chromium  # Chromium only
+```
+
+Test files:
+- `tests/helpers.ts`                — shared dataset constants + `waitForInit` / `switchTab` helpers
+- `tests/01-page-load.spec.ts`      — smoke: title, total count, default tab
+- `tests/02-tab-navigation.spec.ts` — sticky tab bar, all 4 tabs switchable
+- `tests/03-ea-landscape.spec.ts`   — stats, perspective toggle, app cards, tooltip, smart search, keyboard nav, CTM Jobs highlight, side-nav
+- `tests/04-dashboard.spec.ts`      — stat cards, all 4 charts, plan perspective pills
+- `tests/05-jobs-tab.spec.ts`       — table, search, filters, sort, pagination, migration column
+- `tests/06-ctm-migration.spec.ts`  — stat cards, doughnut chart, table, search, status filter, cell navigation
 
 ## Output
 
