@@ -157,13 +157,14 @@ cargo fmt                      # auto-format
 Tests live in `tests/` and target the generated `report.html`. Run `cargo run` first to (re)generate the report, then:
 
 ```bash
-npm test                           # run all 184 tests headless (Chromium + WebKit)
+npm test                           # run all 92 tests headless (Chromium)
 npx playwright test --ui           # interactive UI mode
 npx playwright test --headed       # headed browser (visible window)
 npx playwright test --debug        # step-through debugger
 npx playwright test 03-ea          # run a single spec file by name prefix
-npx playwright test --project=chromium  # Chromium only
 ```
+
+> Only Chromium is configured (`playwright.config.ts`). WebKit is intentionally excluded.
 
 Test files:
 - `tests/helpers.ts`                — shared dataset constants + `waitForInit` / `switchTab` helpers
@@ -173,6 +174,36 @@ Test files:
 - `tests/04-dashboard.spec.ts`      — stat cards, all 4 charts, plan perspective pills
 - `tests/05-jobs-tab.spec.ts`       — table, search, filters, sort, pagination, migration column
 - `tests/06-ctm-migration.spec.ts`  — stat cards, doughnut chart, table, search, status filter, cell navigation
+
+### Stable element IDs relied on by tests
+
+Keep these IDs in `src/template.html` — removing or renaming them will break tests:
+
+**Dashboard charts (canvas)**
+- `#domainChart` — Jobs by Domain bar chart
+- `#itDivChart` — Jobs by IT Division bar chart
+- `#planStackedChart` — Application Plan stacked bar chart
+- `#typeChart` — Application Type doughnut chart
+
+**Jobs tab**
+- `#jobs-thead` / `#jobs-tbody` — table head/body rows
+- `#search-input` — main job search box
+- `#domain-filter`, `#subdomain-filter`, `#itdiv-filter`, `#appltype-filter`, `#plan-filter`, `#critical-filter`, `#crit-level-filter` — filter dropdowns
+- `#appcode-filter` — hidden input that mirrors the `appCodeFilter` JS variable; set by `navigateToJobs()` / cleared by `resetAllJobFilters()`
+- `#clear-filters-btn` — Clear All button
+- `#export-csv-btn` — Export CSV button
+- `#pagination-info` — "N–M of Total" span inside `#pagination`
+- `#page-size-select` — page-size dropdown inside `#pagination`
+- `#prev-page-btn` / `#next-page-btn` — prev/next buttons inside `#pagination`
+- `#empty-state` — empty-state message div
+
+**CTM Migration tab**
+- `#mig-tbody` — migration table body rows
+- `#mig-stat-total`, `#mig-stat-done`, `#mig-stat-inprog`, `#mig-stat-notstarted` — stat card values
+- `#mig-search` — migration search input
+- `#mig-status-filter` — status filter dropdown
+- `#mig-export-btn` — Export CSV button
+- `#mig-donut` — doughnut chart canvas
 
 ## Output
 
