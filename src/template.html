@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Control-M Report</title>
+  __MSAL_CDN__
   <style>
     :root {
       --primary: #2563eb;
@@ -62,6 +63,37 @@
     header p  { font-size: 0.75rem; opacity: 0.7; margin-top: 1px; }
 
     .header-meta { font-size: 0.75rem; opacity: 0.7; text-align: right; }
+
+    .header-right { display:flex; align-items:center; gap:1rem; }
+    .auth-user {
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(255,255,255,0.15);
+      border-radius: 9999px;
+      padding: 0.3rem 0.5rem 0.3rem 0.75rem;
+      font-size: 0.78rem;
+      color: white;
+    }
+    .auth-user-avatar {
+      width: 26px; height: 26px;
+      background: rgba(255,255,255,0.25);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.65rem; font-weight: 700; letter-spacing: 0;
+    }
+    .auth-signout-btn {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+      border-radius: 9999px;
+      padding: 0.2rem 0.65rem;
+      font-size: 0.72rem;
+      cursor: pointer;
+      transition: background 0.12s;
+      font-family: inherit;
+    }
+    .auth-signout-btn:hover { background: rgba(255,255,255,0.28); }
 
     /* ── Tab Nav ── */
     nav.tabs {
@@ -725,7 +757,7 @@
   </div>
   <div class="loader-spinner"></div>
   <div class="loader-title">Control-M Report</div>
-  <div class="loader-sub">Loading report data…</div>
+  <div id="loader-sub-text" class="loader-sub">Loading report data…</div>
   <div class="loader-bar-wrap"><div class="loader-bar"></div></div>
 </div>
 
@@ -742,9 +774,16 @@
       <p id="gen-date">Loading…</p>
     </div>
   </div>
-  <div class="header-meta">
-    <div id="header-total"></div>
-    <div>ctrlm-report</div>
+  <div class="header-right">
+    <div id="auth-user" class="auth-user">
+      <div class="auth-user-avatar" id="auth-user-avatar">?</div>
+      <span class="auth-user-name">—</span>
+      <button class="auth-signout-btn" id="auth-signout-btn">Sign out</button>
+    </div>
+    <div class="header-meta">
+      <div id="header-total"></div>
+      <div>ctrlm-report</div>
+    </div>
   </div>
 </header>
 
@@ -1266,6 +1305,11 @@ const COLUMNS = [
   { key: 'pr',  label: 'Priority'                         },
   { key: 'cl',  label: 'Criticality'                      },
 ];
+
+function setLoaderMsg(msg) {
+  const el = document.getElementById('loader-sub-text');
+  if (el) el.textContent = msg;
+}
 
 // ── State ──
 let filteredData  = DATA;
@@ -3645,11 +3689,8 @@ document.addEventListener('click', e => {
 // ── Initial render ──
 applyFilters();
 
-// ── Hide loading overlay ──
-(function hideLoader() {
-  const overlay = document.getElementById('loading-overlay');
-  if (overlay) overlay.classList.add('hidden');
-})();
+// ── Auth startup (injected by cargo run) ──
+__AUTH_STARTUP__
 </script>
 </body>
 </html>

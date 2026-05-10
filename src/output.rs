@@ -132,11 +132,62 @@ impl<'a> ReportPlanItem<'a> {
 
 const TEMPLATE: &str = include_str!("template.html");
 
+const MSAL_CDN: &str =
+    r#"<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>"#;
+
+const MSAL_STARTUP_TMPL: &str = r#"(async function() {
+  setLoaderMsg('Signing in…');
+  const _msal = new msal.PublicClientApplication({
+    auth: {
+      clientId: '__CLIENT_ID__',
+      authority: 'https://login.microsoftonline.com/__TENANT_ID__',
+      redirectUri: window.location.origin + window.location.pathname,
+    },
+    cache: { cacheLocation: 'sessionStorage' },
+  });
+  await _msal.initialize();
+  const _res  = await _msal.handleRedirectPromise();
+  const _acct = _res?.account ?? _msal.getAllAccounts()[0];
+  if (!_acct) {
+    await _msal.loginRedirect({ scopes: ['User.Read'] });
+    return;
+  }
+  const _u = document.getElementById('auth-user');
+  if (_u) {
+    _u.style.display = 'flex';
+    const initials = (_acct.name || _acct.username || '?')
+      .split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    document.getElementById('auth-user-avatar').textContent = initials;
+    _u.querySelector('.auth-user-name').textContent = _acct.name || _acct.username;
+    document.getElementById('auth-signout-btn').onclick =
+      () => _msal.logoutRedirect({ account: _acct });
+  }
+  document.getElementById('loading-overlay').classList.add('hidden');
+})();"#;
+
+const NO_AUTH_STARTUP: &str =
+    "document.getElementById('loading-overlay').classList.add('hidden');";
+
+/// Configuration for optional Entra ID authentication gate.
+#[derive(Debug)]
+pub struct AuthConfig {
+    pub enabled: bool,
+    pub client_id: String,
+    pub tenant_id: String,
+}
+
+impl Default for AuthConfig {
+    fn default() -> Self {
+        Self { enabled: false, client_id: String::new(), tenant_id: String::new() }
+    }
+}
+
 pub fn generate_report(
     jobs: &[Job],
     app_inventory: &[AppInventory],
     plan: &[CtrlmPlan],
     output_path: &Path,
+    auth: &AuthConfig,
 ) -> Result<()> {
     let report_jobs: Vec<ReportJob<'_>> = jobs.iter().map(ReportJob::from_job).collect();
     let data_json = serde_json::to_string(&report_jobs)?;
@@ -152,11 +203,22 @@ pub fn generate_report(
         .unwrap_or_default()
         .as_secs();
 
+    let (msal_cdn, auth_startup) = if auth.enabled {
+        let startup = MSAL_STARTUP_TMPL
+            .replace("__CLIENT_ID__", &auth.client_id)
+            .replace("__TENANT_ID__", &auth.tenant_id);
+        (MSAL_CDN, startup)
+    } else {
+        ("", NO_AUTH_STARTUP.to_string())
+    };
+
     let html = TEMPLATE
         .replace("__DATA__", &data_json)
         .replace("__APP_DATA__", &app_data_json)
         .replace("__PLAN_DATA__", &plan_data_json)
-        .replace("__GEN_TIME__", &gen_time.to_string());
+        .replace("__GEN_TIME__", &gen_time.to_string())
+        .replace("__MSAL_CDN__", msal_cdn)
+        .replace("__AUTH_STARTUP__", &auth_startup);
 
     fs::write(output_path, html)?;
     Ok(())
