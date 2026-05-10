@@ -543,12 +543,17 @@
     .eal-dd-ac { font-size:0.82rem; font-weight:700; color:#1e293b; min-width:76px; flex-shrink:0; }
     .eal-dd-path { font-size:0.68rem; color:#94a3b8; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .eal-dd-plan { flex-shrink:0; }
-    .eal-search-highlight { animation:ealPulse 1.6s ease-out forwards; }
+    .eal-search-highlight { animation:ealPulse 1.4s ease-out forwards; }
     @keyframes ealPulse {
-      0%   { outline:3px solid var(--primary); outline-offset:3px; box-shadow:0 0 0 6px #2563eb28; transform:scale(1.06); }
+      0%   { outline:3px solid var(--primary); outline-offset:3px; box-shadow:0 0 0 6px #2563eb28; }
       60%  { outline:2px solid var(--primary); outline-offset:2px; }
-      100% { outline:none; box-shadow:0 1px 2px rgba(0,0,0,0.04); transform:none; }
+      100% { outline:2px solid var(--primary); outline-offset:2px; box-shadow:0 0 0 4px #2563eb14; }
     }
+    .eal-app.eal-app-selected {
+      outline:2px solid var(--primary) !important; outline-offset:2px;
+      box-shadow:0 0 0 4px #2563eb12, 0 2px 8px rgba(37,99,235,0.14) !important;
+    }
+    .eal-app.eal-app-selected .eal-app-code { color:var(--primary); }
 
     /* ── EA Landscape – White-card Tooltip ── */
     #eal-tip {
@@ -3410,6 +3415,9 @@ if (_ealWrap) {
 
 function onEALSearch(val) {
   ealSearchQuery = val.trim();
+  ealDdActiveIdx = -1;
+  document.querySelectorAll('#ea-matrix-wrap .eal-app-selected')
+    .forEach(el => el.classList.remove('eal-app-selected'));
   const clearBtn = document.getElementById('eal-search-clear');
   if (clearBtn) clearBtn.style.display = ealSearchQuery ? 'flex' : 'none';
   if (!ealSearchQuery) {
@@ -3423,6 +3431,8 @@ function onEALSearch(val) {
 function clearEALSearch() {
   ealSearchQuery = '';
   ealDdActiveIdx = -1;
+  document.querySelectorAll('#ea-matrix-wrap .eal-app-selected')
+    .forEach(el => el.classList.remove('eal-app-selected'));
   const inp      = document.getElementById('eal-search-input');
   const clearBtn = document.getElementById('eal-search-clear');
   const dd       = document.getElementById('eal-search-dropdown');
@@ -3482,17 +3492,35 @@ function ealDdSetActive(items) {
 }
 
 function ealSearchSelect(ac) {
+  // Clear previous persistent selection
+  document.querySelectorAll('#ea-matrix-wrap .eal-app-selected')
+    .forEach(el => el.classList.remove('eal-app-selected'));
+
   const dd  = document.getElementById('eal-search-dropdown');
   const inp = document.getElementById('eal-search-input');
   if (dd)  dd.classList.remove('eal-dd-open');
-  if (inp) inp.value = ac;
-  ealSearchQuery = ac;
+  if (inp) { inp.value = ac; inp.blur(); }
+  ealSearchQuery  = ac;
+  ealDdActiveIdx  = -1;
 
   const card = document.querySelector(`#ea-matrix-wrap [data-ac="${ac.replace(/"/g, '\\"')}"]`);
   if (!card) return;
-  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  card.classList.add('eal-search-highlight');
-  setTimeout(() => card.classList.remove('eal-search-highlight'), 1700);
+
+  // Scroll with offset to clear sticky header (64px) + sticky tab bar (48px) + breathing room
+  const stickyOffset = 128;
+  const rect   = card.getBoundingClientRect();
+  const target = window.scrollY + rect.top - stickyOffset;
+  window.scrollTo({ top: target, behavior: 'smooth' });
+
+  // Pulse animation → then hold selection highlight
+  card.classList.remove('eal-search-highlight', 'eal-app-selected');
+  requestAnimationFrame(() => {
+    card.classList.add('eal-search-highlight');
+    setTimeout(() => {
+      card.classList.remove('eal-search-highlight');
+      card.classList.add('eal-app-selected');
+    }, 1450);
+  });
 }
 
 // Keyboard navigation for search dropdown
