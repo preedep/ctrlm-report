@@ -644,9 +644,90 @@
       nav.tabs { padding: 0 1rem; }
       header   { padding: 0 1rem; }
     }
+  /* ── Loading overlay ── */
+  #loading-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.25rem;
+    transition: opacity 0.45s ease, visibility 0.45s ease;
+  }
+  #loading-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .loader-icon {
+    width: 56px; height: 56px;
+    background: var(--primary);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 20px rgba(37,99,235,0.30);
+    animation: loaderPulse 1.8s ease-in-out infinite;
+  }
+  @keyframes loaderPulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 4px 20px rgba(37,99,235,0.30); }
+    50%       { transform: scale(1.07); box-shadow: 0 8px 32px rgba(37,99,235,0.45); }
+  }
+  .loader-spinner {
+    width: 36px; height: 36px;
+    border: 3.5px solid var(--primary-light);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: loaderSpin 0.75s linear infinite;
+  }
+  @keyframes loaderSpin { to { transform: rotate(360deg); } }
+  .loader-title {
+    font-size: 1.1rem; font-weight: 700; color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .loader-sub {
+    font-size: 0.82rem; color: var(--text-muted);
+    animation: loaderFade 1.4s ease-in-out infinite;
+  }
+  @keyframes loaderFade {
+    0%, 100% { opacity: 0.5; }
+    50%       { opacity: 1; }
+  }
+  .loader-bar-wrap {
+    width: 180px; height: 4px;
+    background: var(--primary-light);
+    border-radius: 9999px;
+    overflow: hidden;
+  }
+  .loader-bar {
+    height: 100%;
+    background: var(--primary);
+    border-radius: 9999px;
+    animation: loaderBar 1.6s ease-in-out infinite;
+    transform-origin: left;
+  }
+  @keyframes loaderBar {
+    0%   { transform: scaleX(0) translateX(0); }
+    50%  { transform: scaleX(0.7) translateX(0); }
+    100% { transform: scaleX(0) translateX(200%); }
+  }
   </style>
 </head>
 <body>
+
+<!-- Loading overlay -->
+<div id="loading-overlay">
+  <div class="loader-icon">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2">
+      <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+    </svg>
+  </div>
+  <div class="loader-spinner"></div>
+  <div class="loader-title">Control-M Report</div>
+  <div class="loader-sub">Loading report data…</div>
+  <div class="loader-bar-wrap"><div class="loader-bar"></div></div>
+</div>
 
 <!-- Header -->
 <header>
@@ -3563,6 +3644,12 @@ document.addEventListener('click', e => {
 
 // ── Initial render ──
 applyFilters();
+
+// ── Hide loading overlay ──
+(function hideLoader() {
+  const overlay = document.getElementById('loading-overlay');
+  if (overlay) overlay.classList.add('hidden');
+})();
 </script>
 </body>
 </html>
