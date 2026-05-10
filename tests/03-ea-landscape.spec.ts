@@ -69,7 +69,7 @@ test.describe('EA Landscape', () => {
       await expect(card).toBeVisible();
       await card.click();
       await expect(page.locator('#tab-jobs')).toHaveClass(/active/);
-      // App code filter should be set
+      // Hidden input mirrors the appCodeFilter JS variable
       await expect(page.locator('#appcode-filter')).toHaveValue(D.APP_CODE_MANY_JOBS);
     });
   });
@@ -204,7 +204,8 @@ test.describe('EA Landscape', () => {
     test('ArrowDown from last item wraps to first', async ({ page }) => {
       const items = page.locator('.eal-dd-item[data-ac]');
       const count = await items.count();
-      for (let i = 0; i < count; i++) {
+      // Navigate past the last item (count+1 presses) so it wraps to first
+      for (let i = 0; i <= count; i++) {
         await page.locator('#eal-search-input').press('ArrowDown');
       }
       await expect(items.first()).toHaveClass(/eal-dd-active/);

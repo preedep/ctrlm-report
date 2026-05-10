@@ -965,13 +965,14 @@
         <select id="crit-level-filter" class="filter-select" style="min-width:160px">
           <option value="">All Criticality</option>
         </select>
-        <button class="btn-clear-filters" onclick="clearAllFilters()" title="Clear all filters and show all jobs">
+        <input type="hidden" id="appcode-filter" value="">
+        <button id="clear-filters-btn" class="btn-clear-filters" onclick="clearAllFilters()" title="Clear all filters and show all jobs">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
             <path d="M18 6 6 18M6 6l12 12"/>
           </svg>
           Clear All
         </button>
-        <button class="btn-export-csv" onclick="exportCSV()" title="Export current filtered results to CSV">
+        <button id="export-csv-btn" class="btn-export-csv" onclick="exportCSV()" title="Export current filtered results to CSV">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
           </svg>
@@ -1091,7 +1092,7 @@
               <option value="Done">Done</option>
               <option value="In Progress">In Progress</option>
             </select>
-            <button class="btn-export-csv" onclick="exportMigCSV()" title="Export to CSV">
+            <button id="mig-export-btn" class="btn-export-csv" onclick="exportMigCSV()" title="Export to CSV">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
@@ -1431,6 +1432,7 @@ function resetAllJobFilters() {
   critFilter = '';
   clFilter = '';
   appCodeFilter = '';
+  document.getElementById('appcode-filter').value = '';
   document.getElementById('search-input').value = '';
   document.getElementById('domain-filter').value = '';
   populateSubdomainDropdown('');
@@ -1452,6 +1454,7 @@ function navigateToJobs(domain, subDomain, appCode) {
   document.getElementById('subdomain-filter').value = sdFilter;
   if (appCode && appCode !== '(No App Code)') {
     appCodeFilter = appCode;
+    document.getElementById('appcode-filter').value = appCode;
   }
 
   if (dashPlan) {
@@ -2875,19 +2878,21 @@ function renderPagination() {
     pages = [1, '…', currentPage-1, currentPage, currentPage+1, '…', totalPages];
   }
 
-  let html = btn('‹', currentPage - 1, false, currentPage === 1);
+  const prevDisabled = currentPage === 1;
+  const nextDisabled = currentPage === totalPages;
+  let html = `<button id="prev-page-btn" class="pag-btn" ${prevDisabled ? 'disabled' : ''} onclick="goPage(${currentPage - 1})">‹</button>`;
   pages.forEach(p => {
     html += p === '…'
       ? `<span class="pag-ellipsis">…</span>`
       : btn(p, p, p === currentPage);
   });
-  html += btn('›', currentPage + 1, false, currentPage === totalPages);
+  html += `<button id="next-page-btn" class="pag-btn" ${nextDisabled ? 'disabled' : ''} onclick="goPage(${currentPage + 1})">›</button>`;
 
   html += `<div class="pag-right">
-    <span style="font-size:0.8125rem;color:var(--text-muted)">
+    <span id="pagination-info" style="font-size:0.8125rem;color:var(--text-muted)">
       ${((currentPage-1)*pageSize+1).toLocaleString()}–${Math.min(currentPage*pageSize, total).toLocaleString()} of ${total.toLocaleString()}
     </span>
-    <select class="pag-size-select" onchange="changePageSize(+this.value)">
+    <select id="page-size-select" class="pag-size-select" onchange="changePageSize(+this.value)">
       ${[20,50,100].map(s => `<option value="${s}"${s===pageSize?' selected':''}>${s} / page</option>`).join('')}
     </select>
   </div>`;

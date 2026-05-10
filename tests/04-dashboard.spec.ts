@@ -30,19 +30,19 @@ test.describe('Dashboard', () => {
   // ── Charts ────────────────────────────────────────────────────────────────
   test.describe('Charts', () => {
     test('Jobs by Domain bar chart is rendered', async ({ page }) => {
-      await expectChartRendered(page, 'domain-chart');
+      await expectChartRendered(page, 'domainChart');
     });
 
     test('Jobs by IT Division bar chart is rendered', async ({ page }) => {
-      await expectChartRendered(page, 'itdiv-chart');
+      await expectChartRendered(page, 'itDivChart');
     });
 
     test('Application Plan stacked bar chart is rendered', async ({ page }) => {
-      await expectChartRendered(page, 'plan-stacked-chart');
+      await expectChartRendered(page, 'planStackedChart');
     });
 
     test('Application Type doughnut chart is rendered', async ({ page }) => {
-      await expectChartRendered(page, 'type-chart');
+      await expectChartRendered(page, 'typeChart');
     });
   });
 
@@ -78,6 +78,6 @@ test.describe('Dashboard', () => {
   test('switching Plan chart to "By IT Division" rebuilds chart', async ({ page }) => {
     await page.locator('.plan-persp-btn[data-persp="itdiv"]').click();
     await expect(page.locator('.plan-persp-btn[data-persp="itdiv"]')).toHaveClass(/active/);
-    await expectChartRendered(page, 'plan-stacked-chart');
+    await expectChartRendered(page, 'planStackedChart');
   });
 });
