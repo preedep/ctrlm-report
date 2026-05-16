@@ -244,6 +244,7 @@ Keep these IDs in `src/template.html` — removing or renaming them will break t
 - Can click on dashboard `Job by domain` to show each domain , drill down domain -> sub domain -> it division
 - Can search and result display all job in table (that that can sortable ) , and display in paging (20,50,100)
 - Diplay sum job amount of Unmatched Control-M Applications at table : Unmatched Control-M Applications  
+- Each row in the Unmatched Control-M Applications grid is clickable — calls `navigateToUnmatchedApp(ap)` which sets `searchQuery` (lowercased) to the Control-M application name and switches to the Jobs tab; uses search (not `appCodeFilter`) because unmatched jobs have no `ac` value
 - Logic for choose sub domain (compare between app_port_sub_domain and app_port_revised_to_sub_domain)
 ```
   if app_port_revised_to_sub_domain is not empty {

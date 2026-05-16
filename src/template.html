@@ -387,11 +387,15 @@
     .unmatched-item {
       display: flex; justify-content: space-between; align-items: center;
       padding: 0.625rem 1.5rem; border-bottom: 1px solid var(--border);
+      cursor: pointer; transition: background 0.15s;
     }
+
+    .unmatched-item:hover { background: var(--surface); }
+    .unmatched-item:hover .unmatched-app { color: var(--primary); }
 
     .unmatched-item:nth-child(odd) { border-right: 1px solid var(--border); }
 
-    .unmatched-app { font-size: 0.8125rem; font-weight: 500; color: var(--text); }
+    .unmatched-app { font-size: 0.8125rem; font-weight: 500; color: var(--text); transition: color 0.15s; }
 
     .unmatched-count {
       font-size: 0.75rem; font-weight: 600;
@@ -1446,7 +1450,7 @@ function rebuildDashboardData() {
     unmatchedEntries.length + ' apps · ' + unmatchedTotalJobs.toLocaleString() + ' jobs';
   document.getElementById('unmatched-grid').innerHTML =
     unmatchedEntries.map(([app, count]) =>
-      `<div class="unmatched-item">
+      `<div class="unmatched-item" data-ap="${escHtml(app)}" onclick="navigateToUnmatchedApp(this.dataset.ap)" title="Click to view jobs for ${escHtml(app)} in Jobs tab">
          <span class="unmatched-app">${escHtml(app)}</span>
          <span class="unmatched-count">${count}</span>
        </div>`
@@ -1567,6 +1571,20 @@ function resetAllJobFilters() {
   document.getElementById('plan-filter').value = '';
   document.getElementById('critical-filter').value = '';
   document.getElementById('crit-level-filter').value = '';
+}
+
+function navigateToUnmatchedApp(ap) {
+  resetAllJobFilters();
+  searchQuery = ap.toLowerCase();
+  document.getElementById('search-input').value = ap;
+
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelector('[data-tab="jobs"]').classList.add('active');
+  document.getElementById('tab-jobs').classList.add('active');
+
+  currentPage = 1;
+  applyFilters();
 }
 
 function navigateToJobs(domain, subDomain, appCode) {
