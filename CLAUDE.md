@@ -170,7 +170,7 @@ cargo fmt                      # auto-format
 Tests live in `tests/` and target the generated `report.html`. Run `cargo run` first to (re)generate the report, then:
 
 ```bash
-npm test                           # run all 92 tests headless (Chromium)
+npm test                           # run all 102 tests headless (Chromium)
 npx playwright test --ui           # interactive UI mode
 npx playwright test --headed       # headed browser (visible window)
 npx playwright test --debug        # step-through debugger
@@ -187,6 +187,7 @@ Test files:
 - `tests/04-dashboard.spec.ts`      — stat cards, all 4 charts, plan perspective pills
 - `tests/05-jobs-tab.spec.ts`       — table, search, filters, sort, pagination, migration column
 - `tests/06-ctm-migration.spec.ts`  — stat cards, doughnut chart, table, search, status filter, cell navigation
+- `tests/07-enhancements.spec.ts`   — unmatched app click-through (grid → Jobs tab, search pre-fill, row count), Airflow SVG icon in migration badges (Jobs tab + CTM Migration tab)
 
 ### Stable element IDs relied on by tests
 
