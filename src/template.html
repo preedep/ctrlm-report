@@ -3362,21 +3362,21 @@ function depGetNeighbourhood(focusApp, hops, dir) {
     const next = [];
     frontier.forEach(app => {
       if (dir !== 'down') {
-        // upstream: apps that this app depends on (out-edges from this app)
-        const outs = depAppOutEdges[app] || {};
-        Object.entries(outs).forEach(([toApp, cnt]) => {
-          const key = app + '→' + toApp;
-          edges.set(key, { from: app, to: toApp, count: (edges.get(key)?.count || 0) + cnt });
-          if (!visitedApps.has(toApp)) { visitedApps.add(toApp); next.push(toApp); }
-        });
-      }
-      if (dir !== 'up') {
-        // downstream: apps that depend on this app (in-edges into this app)
+        // upstream: apps that feed INTO this app (in-edges: those apps are `from`, this app is `to`)
         const ins = depAppInEdges[app] || {};
         Object.entries(ins).forEach(([fromApp, cnt]) => {
           const key = fromApp + '→' + app;
           edges.set(key, { from: fromApp, to: app, count: (edges.get(key)?.count || 0) + cnt });
           if (!visitedApps.has(fromApp)) { visitedApps.add(fromApp); next.push(fromApp); }
+        });
+      }
+      if (dir !== 'up') {
+        // downstream: apps that consume this app's output (out-edges: this app is `from`, those are `to`)
+        const outs = depAppOutEdges[app] || {};
+        Object.entries(outs).forEach(([toApp, cnt]) => {
+          const key = app + '→' + toApp;
+          edges.set(key, { from: app, to: toApp, count: (edges.get(key)?.count || 0) + cnt });
+          if (!visitedApps.has(toApp)) { visitedApps.add(toApp); next.push(toApp); }
         });
       }
     });
@@ -3412,7 +3412,7 @@ function buildDepGraph() {
       shape: isFocus ? 'ellipse' : 'box',
       borderWidth: isFocus ? 3 : 1.5,
       shadow: isFocus ? { enabled: true, color: 'rgba(245,158,11,0.4)', size: 12 } : false,
-      title: buildDepNodeTooltip(ac),
+      title: undefined,
     };
   });
 
@@ -3487,15 +3487,17 @@ function buildDepNodeTooltip(ac) {
   const depJobs   = depAppJobCount[ac] || 0;
   const totalJobs = depAppTotalCount[ac] || (depAppJobMap[ac] || []).length;
   const plan      = depAppPlanMap[ac] || 'No plan';
-  const outCount  = Object.keys(depAppOutEdges[ac] || {}).length;
-  const inCount   = Object.keys(depAppInEdges[ac]  || {}).length;
+  // out-edges (ac is `from`): ac runs first → downstream apps depend on ac → "Used by"
+  // in-edges  (ac is `to`):  upstream apps run first → ac depends on them → "Depends on"
+  const usedByCount    = Object.keys(depAppOutEdges[ac] || {}).length;
+  const dependsOnCount = Object.keys(depAppInEdges[ac]  || {}).length;
   const appInfo   = depAppInfoMap[ac] || {};
   return `<b>${escHtml(ac)}</b>` +
     (appInfo.ai ? `<span class="dag-tt-meta">${escHtml(appInfo.ai)}</span>` : '') +
     `<span class="dag-tt-meta">${depJobs.toLocaleString()} dep jobs of ${totalJobs.toLocaleString()} total</span>` +
     `<span class="dag-tt-meta">Plan: ${escHtml(plan)}</span>` +
-    `<span class="dag-tt-meta dag-tt-in">↑ depends on ${outCount} app${outCount !== 1 ? 's' : ''}</span>` +
-    `<span class="dag-tt-meta dag-tt-out">↓ depended on by ${inCount} app${inCount !== 1 ? 's' : ''}</span>`;
+    (dependsOnCount ? `<span class="dag-tt-meta dag-tt-in">↑ depends on ${dependsOnCount} app${dependsOnCount !== 1 ? 's' : ''}</span>` : '') +
+    (usedByCount    ? `<span class="dag-tt-meta dag-tt-out">↓ used by ${usedByCount} app${usedByCount !== 1 ? 's' : ''}</span>` : '');
 }
 
 function openDepDetail(appCode) {
@@ -3504,8 +3506,10 @@ function openDepDetail(appCode) {
   const plan     = depAppPlanMap[appCode] || 'No plan';
   const planCol  = depPlanColor(appCode);
   const appInfo  = depAppInfoMap[appCode] || {};
-  const outApps  = Object.entries(depAppOutEdges[appCode] || {}).sort((a,b) => b[1]-a[1]);
-  const inApps   = Object.entries(depAppInEdges[appCode]  || {}).sort((a,b) => b[1]-a[1]);
+  // out-edges: appCode is `from` → these apps consume appCode's output → "Used by"
+  // in-edges:  appCode is `to`   → these apps feed into appCode       → "Depends on"
+  const usedByApps    = Object.entries(depAppOutEdges[appCode] || {}).sort((a,b) => b[1]-a[1]);
+  const dependsOnApps = Object.entries(depAppInEdges[appCode]  || {}).sort((a,b) => b[1]-a[1]);
 
   document.getElementById('dep-detail-title').textContent = appCode;
 
@@ -3519,19 +3523,19 @@ function openDepDetail(appCode) {
     `<div class="dag-detail-field"><div class="lbl">Dep Jobs</div><div class="val">${depJobs.toLocaleString()} <span style="color:#94a3b8;font-size:0.72rem">of ${totalJobs.toLocaleString()} total</span></div></div>` +
     `<div class="dag-detail-field"><div class="lbl">Migration Plan</div>
        <div class="val"><span style="background:${escHtml(planCol)};color:#fff;padding:2px 8px;border-radius:4px;font-size:0.72rem">${escHtml(plan)}</span></div></div>` +
-    (outApps.length ? `<div class="dag-detail-field"><div class="lbl">↑ Depends on</div>
-      <div class="val" style="display:flex;flex-direction:column;gap:3px">${outApps.slice(0,8).map(([ac,cnt]) =>
+    (dependsOnApps.length ? `<div class="dag-detail-field"><div class="lbl">↑ Depends on</div>
+      <div class="val" style="display:flex;flex-direction:column;gap:3px">${dependsOnApps.slice(0,8).map(([ac,cnt]) =>
         `<span style="font-size:0.72rem;display:flex;justify-content:space-between">
           <span style="cursor:pointer;color:var(--primary)" onclick="refocusDepApp('${escHtml(ac)}')">${escHtml(ac)}</span>
           <span style="color:#94a3b8">${cnt} link${cnt>1?'s':''}</span></span>`).join('') +
-        (outApps.length > 8 ? `<span style="font-size:0.7rem;color:#94a3b8">+${outApps.length-8} more</span>` : '')
+        (dependsOnApps.length > 8 ? `<span style="font-size:0.7rem;color:#94a3b8">+${dependsOnApps.length-8} more</span>` : '')
       }</div></div>` : '') +
-    (inApps.length ? `<div class="dag-detail-field"><div class="lbl">↓ Used by</div>
-      <div class="val" style="display:flex;flex-direction:column;gap:3px">${inApps.slice(0,8).map(([ac,cnt]) =>
+    (usedByApps.length ? `<div class="dag-detail-field"><div class="lbl">↓ Used by</div>
+      <div class="val" style="display:flex;flex-direction:column;gap:3px">${usedByApps.slice(0,8).map(([ac,cnt]) =>
         `<span style="font-size:0.72rem;display:flex;justify-content:space-between">
           <span style="cursor:pointer;color:var(--primary)" onclick="refocusDepApp('${escHtml(ac)}')">${escHtml(ac)}</span>
           <span style="color:#94a3b8">${cnt} link${cnt>1?'s':''}</span></span>`).join('') +
-        (inApps.length > 8 ? `<span style="font-size:0.7rem;color:#94a3b8">+${inApps.length-8} more</span>` : '')
+        (usedByApps.length > 8 ? `<span style="font-size:0.7rem;color:#94a3b8">+${usedByApps.length-8} more</span>` : '')
       }</div></div>` : '');
 
   const actions = document.getElementById('dep-detail-actions');
