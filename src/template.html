@@ -577,12 +577,13 @@
       font-size: 0.85rem; text-align: center;
     }
     .dep-graph-wrap {
-      flex: 1; position: relative; min-height: 560px;
+      flex: 1; position: relative; min-height: 560px; overflow: hidden;
     }
     #dep-graph { width: 100%; height: 560px; background: #fff; }
     .dep-detail-panel {
       width: 0; overflow: hidden; transition: width 0.25s ease;
       border-left: 1px solid #e2e8f0; background: #fff; flex-shrink: 0;
+      height: 560px; overflow-y: auto;
     }
     .dep-detail-panel.open { width: 300px; }
     .dep-howto {
@@ -1549,9 +1550,9 @@
             </div>
             <div class="dag-ctrl-group">
               <span class="dag-ctrl-group-label">Direction</span>
-              <button class="dag-seg-btn active" id="dep-dir-both" onclick="setDepDir('both')" title="Upstream + Downstream">Both</button>
-              <button class="dag-seg-btn" id="dep-dir-up" onclick="setDepDir('up')" title="Apps this app depends on">↑ Upstream</button>
-              <button class="dag-seg-btn" id="dep-dir-down" onclick="setDepDir('down')" title="Apps that depend on this app">↓ Downstream</button>
+              <button class="dag-seg-btn active" id="dep-dir-both" onclick="setDepDir('both')" title="Show both upstream and downstream apps">⇄ Both</button>
+              <button class="dag-seg-btn" id="dep-dir-up" onclick="setDepDir('up')" title="Apps this app depends on (feeds into this app)">← Depends on</button>
+              <button class="dag-seg-btn" id="dep-dir-down" onclick="setDepDir('down')" title="Apps that depend on this app (this app feeds into them)">→ Used by</button>
             </div>
           </div>
         </div>
@@ -1563,10 +1564,11 @@
           <div class="dep-howto-col">
             <div class="dep-howto-heading">วิธีอ่านแผนภาพ (How to read)</div>
             <ul class="dep-howto-list">
-              <li><b>Node (วงกลม/กล่อง)</b> = 1 Application — แสดง App Code และจำนวน job ที่มี dependency ข้าม app</li>
+              <li><b>Node (วงกลม/กล่อง)</b> = 1 Application — แสดง App Code</li>
               <li><b>ลูกศร A → B</b> = Job ใน A ต้องทำงานเสร็จก่อน จึงจะ trigger job ใน B (A เป็น upstream ของ B)</li>
-              <li><b>ตัวเลขบนลูกศร</b> = จำนวน job condition ที่เชื่อมระหว่างสอง app เท่านั้น — ไม่ใช่จำนวน job ทั้งหมดที่ได้รับผลกระทบ (เช่น ALS→DLP: 5 = มี 5 condition เชื่อมกัน ไม่ใช่ 324 jobs ของ DLP ทั้งหมด)</li>
-              <li><b>ขนาด node</b> = จำนวน "linked jobs" คือ job ใน app นั้นที่มี dependency ข้าม app อย่างน้อย 1 เส้น (ไม่ใช่ job ทั้งหมดของ app)</li>
+              <li><b>สีลูกศร</b> = <span style="color:#3b82f6;font-weight:600">น้ำเงิน</span> = upstream (app อื่น → app ที่เลือก), <span style="color:#22c55e;font-weight:600">เขียว</span> = downstream (app ที่เลือก → app อื่น), เทา = transit (multi-hop)</li>
+              <li><b>ตัวเลขบนลูกศร</b> = จำนวน job condition ที่เชื่อมระหว่างสอง app (เช่น ALS→DLP: 5 = มี 5 condition เชื่อมกัน ไม่ใช่ job ทั้งหมดของ DLP)</li>
+              <li><b>ขนาด node</b> = สัดส่วน linked jobs ของ app (ยิ่งใหญ่ = มี dependency ข้าม app มาก)</li>
               <li><b>สี node</b> = Migration plan ของ app นั้น (ดูตำนานด้านล่าง)</li>
             </ul>
           </div>
@@ -1621,7 +1623,11 @@
         <span class="dag-legend-item"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#8b5cf6;margin-right:4px"></span>Upgrade</span>
         <span class="dag-legend-item"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#f59e0b;margin-right:4px"></span>Replacement</span>
         <span class="dag-legend-item"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#94a3b8;margin-right:4px"></span>No Plan</span>
-        <span class="dag-legend-item" style="color:#94a3b8;font-size:0.65rem">Node size = dep job count · A→B = A runs before B · Click to inspect · Double-click to re-focus</span>
+        <span style="display:inline-block;width:1px;height:18px;background:#e2e8f0;margin:0 4px;vertical-align:middle"></span>
+        <span class="dag-legend-item"><span style="display:inline-block;width:22px;height:3px;background:#3b82f6;border-radius:2px;margin-right:5px;vertical-align:middle"></span>← Depends on (upstream)</span>
+        <span class="dag-legend-item"><span style="display:inline-block;width:22px;height:3px;background:#22c55e;border-radius:2px;margin-right:5px;vertical-align:middle"></span>→ Used by (downstream)</span>
+        <span class="dag-legend-item"><span style="display:inline-block;width:22px;height:3px;background:#94a3b8;border-radius:2px;margin-right:5px;vertical-align:middle"></span>Transit (multi-hop)</span>
+        <span class="dag-legend-item" style="color:#94a3b8;font-size:0.65rem">A→B = A runs before B · Click node to inspect · Double-click to re-focus</span>
         <span class="dag-stat" id="dep-stat"></span>
       </div>
 
@@ -3293,6 +3299,7 @@ let depHops         = 1;
 let depDir          = 'both';
 let depNetwork      = null;
 let depFocusApp     = null;
+let depVisEdgeMap   = {};
 
 function depPlanColor(appCode) {
   const pl = depAppPlanMap[appCode] || '';
@@ -3441,7 +3448,7 @@ function buildDepGraph() {
     const size        = isFocus ? 32 : Math.max(16, Math.min(28, 10 + Math.sqrt(depJobCount) * 1.2));
     return {
       id:    ac,
-      label: ac + '\n' + depJobCount.toLocaleString() + ' linked jobs',
+      label: ac,
       color: {
         background: isFocus ? '#f59e0b' : planColor,
         border:     isFocus ? '#d97706' : planColor,
@@ -3457,18 +3464,35 @@ function buildDepGraph() {
     };
   });
 
-  const visEdges = [...edges.values()].map((e, i) => ({
-    id:     i,
-    from:   e.from,
-    to:     e.to,
-    label:  e.count > 1 ? String(e.count) : '',
-    arrows: 'to',
-    color:  { color: '#94a3b8', highlight: '#475569', hover: '#475569' },
-    font:   { size: 9, color: '#94a3b8', align: 'middle' },
-    width:  Math.max(1, Math.min(4, 1 + Math.log2(e.count))),
-    smooth: { type: 'curvedCW', roundness: 0.2 },
-    title:  `${e.from} → ${e.to}\n${e.count.toLocaleString()} job condition${e.count > 1 ? 's' : ''} trigger this link\n(not all jobs in ${e.to} are affected)`,
-  }));
+  // Classify each edge relative to the focused app:
+  //   upstream   = e.to  === focusApp  (external app → focus)  → blue
+  //   downstream = e.from === focusApp (focus → external app)  → green
+  //   transit    = neither end is focus (multi-hop)             → slate
+  const EDGE_UP   = { line: '#3b82f6', hi: '#1d4ed8', label: '#1e3a8a' };  // blue
+  const EDGE_DOWN = { line: '#22c55e', hi: '#16a34a', label: '#14532d' };  // green
+  const EDGE_MID  = { line: '#94a3b8', hi: '#475569', label: '#334155' };  // slate
+
+  depVisEdgeMap = {};  // vis edge id → { from, to, count }
+  const visEdges = [...edges.values()].map((e, i) => {
+    const pal = e.to === depFocusApp ? EDGE_UP : e.from === depFocusApp ? EDGE_DOWN : EDGE_MID;
+    depVisEdgeMap[i] = { from: e.from, to: e.to, count: e.count };
+    return {
+      id:     i,
+      from:   e.from,
+      to:     e.to,
+      label:  String(e.count),
+      arrows: 'to',
+      color:  { color: pal.line, highlight: pal.hi, hover: pal.hi },
+      font:   {
+        size: 12, bold: true, color: pal.label, align: 'middle',
+        background: '#ffffff',
+        strokeWidth: 3, strokeColor: '#ffffff',
+      },
+      width:  Math.max(1, Math.min(4, 1 + Math.log2(e.count))),
+      smooth: { type: 'curvedCW', roundness: 0.2 },
+      title:  `${e.from} → ${e.to}: click to see job list`,
+    };
+  });
 
   if (depNetwork) depNetwork.destroy();
 
@@ -3498,10 +3522,15 @@ function buildDepGraph() {
     tip.style.top  = Math.min(ev.clientY - r.top  + 14, r.height - tip.offsetHeight - 20) + 'px';
   }, { passive: true });
 
-  // Click → detail panel
+  // Click → node detail or edge detail
   depNetwork.on('click', params => {
-    if (!params.nodes.length) { tip.style.display = 'none'; return; }
-    openDepDetail(params.nodes[0]);
+    tip.style.display = 'none';
+    if (params.nodes.length) {
+      openDepDetail(params.nodes[0]);
+    } else if (params.edges.length) {
+      const ed = depVisEdgeMap[params.edges[0]];
+      if (ed) openDepEdgeDetail(ed.from, ed.to, ed.count);
+    }
   });
 
   // Double-click → re-focus
@@ -3586,12 +3615,95 @@ function openDepDetail(appCode) {
     `<button class="dag-detail-btn secondary" onclick="refocusDepApp(${jnJs})">Re-focus graph here</button>`;
 
   document.getElementById('dep-detail-panel').classList.add('open');
-  setTimeout(() => depNetwork && depNetwork.redraw(), 260);
+  setTimeout(() => {
+    if (!depNetwork) return;
+    const wrap = document.getElementById('dep-graph');
+    depNetwork.setSize(wrap.offsetWidth + 'px', '560px');
+    depNetwork.redraw();
+    depNetwork.fit();
+  }, 260);
+}
+
+function openDepEdgeDetail(fromApp, toApp, condCount) {
+  const key   = fromApp + '→' + toApp;
+  const pairs = depEdgeJobIndex[key] || [];
+  const fromColor = depPlanColor(fromApp);
+  const toColor   = depPlanColor(toApp);
+  const fa = (s) => "'" + s.replace(/\\/g,'\\\\').replace(/'/g,"\\'") + "'";
+
+  document.getElementById('dep-detail-title').textContent = fromApp + ' → ' + toApp;
+
+  const body = document.getElementById('dep-detail-body');
+
+  // Group rows: unique fromJob → toJobs list
+  const grouped = {};
+  pairs.forEach(p => {
+    if (!grouped[p.fromJob]) grouped[p.fromJob] = [];
+    grouped[p.fromJob].push({ toJob: p.toJob, condition: p.condition });
+  });
+  const fromJobs = Object.keys(grouped).sort();
+
+  const appRow = (ac, col) =>
+    `<span style="display:inline-block;background:${escHtml(col)};color:#fff;` +
+    `padding:1px 7px;border-radius:4px;font-size:0.72rem;cursor:pointer" ` +
+    `onclick="navigateDepToJobs(${fa(ac)})">${escHtml(ac)} ↗</span>`;
+
+  body.innerHTML =
+    `<div class="dag-detail-field">
+       <div class="lbl">Link</div>
+       <div class="val" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+         ${appRow(fromApp, fromColor)}
+         <span style="color:#94a3b8">→</span>
+         ${appRow(toApp, toColor)}
+       </div>
+     </div>
+     <div class="dag-detail-field">
+       <div class="lbl">Conditions</div>
+       <div class="val">${condCount.toLocaleString()} job condition${condCount !== 1 ? 's' : ''}</div>
+     </div>` +
+    (fromJobs.length === 0
+      ? `<div style="padding:1rem 0;color:#94a3b8;font-size:0.8rem;text-align:center">No raw DAG data available</div>`
+      : `<div class="dag-detail-field" style="flex-direction:column;gap:4px">
+           <div class="lbl" style="margin-bottom:4px">Job Pairs (${pairs.length.toLocaleString()})</div>
+           <div style="display:flex;flex-direction:column;gap:2px;max-height:340px;overflow-y:auto">
+             ${fromJobs.map(fj => {
+               const targets = grouped[fj];
+               return `<div style="border:1px solid #e2e8f0;border-radius:6px;padding:5px 8px;font-size:0.72rem">
+                 <div style="font-weight:600;color:#1e293b;margin-bottom:3px;cursor:pointer" onclick="openDagModal('${escHtml(fj)}')" title="Open DAG viewer">${escHtml(fj)} ↗</div>
+                 ${targets.map(t =>
+                   `<div style="display:flex;gap:6px;align-items:baseline;padding:1px 0;border-top:1px solid #f1f5f9">
+                      <span style="color:#22c55e;flex:0 0 14px">→</span>
+                      <span style="color:#334155;flex:1;cursor:pointer" onclick="openDagModal('${escHtml(t.toJob)}')" title="Open DAG viewer">${escHtml(t.toJob)}</span>
+                      <span style="color:#94a3b8;font-size:0.68rem;white-space:nowrap">${escHtml(t.condition)}</span>
+                    </div>`
+                 ).join('')}
+               </div>`;
+             }).join('')}
+           </div>
+         </div>`
+    );
+
+  document.getElementById('dep-detail-actions').innerHTML = '';
+
+  document.getElementById('dep-detail-panel').classList.add('open');
+  setTimeout(() => {
+    if (!depNetwork) return;
+    const wrap = document.getElementById('dep-graph');
+    depNetwork.setSize(wrap.offsetWidth + 'px', '560px');
+    depNetwork.redraw();
+    depNetwork.fit();
+  }, 260);
 }
 
 function closeDepDetail() {
   document.getElementById('dep-detail-panel').classList.remove('open');
-  setTimeout(() => depNetwork && depNetwork.redraw(), 260);
+  setTimeout(() => {
+    if (!depNetwork) return;
+    const wrap = document.getElementById('dep-graph');
+    depNetwork.setSize(wrap.offsetWidth + 'px', '560px');
+    depNetwork.redraw();
+    depNetwork.fit();
+  }, 260);
 }
 
 function refocusDepApp(appCode) {
@@ -4201,6 +4313,26 @@ if (DAG_DATA) {
 }
 // Enrich with DATA (app code, appl_type, folder, domain, plan, etc.)
 DATA.forEach(j => { if (j.jn) dagJobDetail[j.jn] = j; });
+
+// depEdgeJobIndex: "fromApp→toApp" → [{fromJob, toJob, condition}]
+// Built once here (after dagNodeById is populated) for O(1) edge-detail lookup.
+const depEdgeJobIndex = {};
+if (DAG_DATA) {
+  // job_name → app_code map (only jobs with an app code)
+  const _jnToAc = {};
+  DATA.forEach(j => { if (j.jn && j.ac) _jnToAc[j.jn] = j.ac; });
+  DAG_DATA.edges.forEach(e => {
+    const fn = dagNodeById[e.from]?.job_name;
+    const tn = dagNodeById[e.to]?.job_name;
+    if (!fn || !tn) return;
+    const fa = _jnToAc[fn];
+    const ta = _jnToAc[tn];
+    if (!fa || !ta || fa === ta) return;
+    const key = fa + '→' + ta;
+    if (!depEdgeJobIndex[key]) depEdgeJobIndex[key] = [];
+    depEdgeJobIndex[key].push({ fromJob: fn, toJob: tn, condition: e.condition });
+  });
+}
 
 // depAppOutEdges/depAppInEdges/depAppList are built earlier from APP_DEP_DATA (pre-computed by Rust)
 
