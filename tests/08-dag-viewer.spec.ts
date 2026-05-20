@@ -335,7 +335,7 @@ test.describe('DAG Dependency Viewer', () => {
       await openDagForFirstRow(page);
       await page.evaluate((jn) => (window as any).openDagDetail(jn), D.DAG_MIDDLE_JOB);
       await expect(page.locator('#dag-detail-panel')).toHaveClass(/open/);
-      await page.locator('.dag-detail-close').click();
+      await page.locator('#dag-detail-panel .dag-detail-close').click();
       await expect(page.locator('#dag-detail-panel')).not.toHaveClass(/open/);
     });
 

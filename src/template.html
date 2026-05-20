@@ -528,6 +528,69 @@
 
     .chart-modal-body { flex: 1; padding: 1.5rem; overflow: hidden; min-height: 0; }
 
+    /* ── Job Dependencies Tab ── */
+    .dep-page-header {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 1.5rem;
+      padding: 1.5rem 2rem 1rem; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap;
+    }
+    .dep-title { font-size: 1.1rem; font-weight: 700; color: #0f172a; margin: 0 0 0.25rem; }
+    .dep-subtitle { font-size: 0.8rem; color: #64748b; margin: 0; }
+    .dep-header-right { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+    .dep-search-wrap {
+      position: relative; display: flex; align-items: center;
+      background: #fff; border: 1.5px solid #e2e8f0; border-radius: 8px;
+      padding: 0 0.5rem 0 0.75rem; width: 260px; transition: border-color 0.15s;
+    }
+    .dep-search-wrap:focus-within { border-color: var(--primary); }
+    .dep-search-icon { color: #94a3b8; flex-shrink: 0; }
+    .dep-search-input {
+      flex: 1; border: none; outline: none; background: transparent;
+      font-size: 0.85rem; padding: 0.5rem 0.4rem; color: #0f172a;
+    }
+    .dep-clear-btn {
+      background: none; border: none; cursor: pointer; font-size: 1rem;
+      color: #94a3b8; padding: 0 2px; line-height: 1;
+    }
+    .dep-clear-btn:hover { color: #64748b; }
+    .dep-dropdown {
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 200;
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12); max-height: 260px; overflow-y: auto;
+      display: none;
+    }
+    .dep-dropdown.open { display: block; }
+    .dep-dd-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.5rem 0.875rem; cursor: pointer; font-size: 0.82rem; color: #334155;
+      transition: background 0.1s;
+    }
+    .dep-dd-item:hover, .dep-dd-item.focused { background: #f1f5f9; }
+    .dep-dd-item .dep-dd-count { font-size: 0.72rem; color: #94a3b8; }
+    .dep-dd-item .dep-dd-plan { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; margin-right: 6px; }
+    .dep-ctrl-row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+    .dep-body {
+      display: flex; min-height: 560px; position: relative;
+    }
+    .dep-empty {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 0.75rem; color: #94a3b8; padding: 3rem;
+      font-size: 0.85rem; text-align: center;
+    }
+    .dep-graph-wrap {
+      flex: 1; position: relative; min-height: 560px;
+    }
+    #dep-graph { width: 100%; height: 560px; background: #fff; }
+    .dep-detail-panel {
+      width: 0; overflow: hidden; transition: width 0.25s ease;
+      border-left: 1px solid #e2e8f0; background: #fff; flex-shrink: 0;
+    }
+    .dep-detail-panel.open { width: 300px; }
+    .dep-footer {
+      display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+      padding: 0.625rem 1.5rem; border-top: 1px solid #e2e8f0;
+      background: #f8fafc; font-size: 0.72rem; color: #64748b;
+    }
+
     /* ── DAG Dependency Viewer Modal ── */
     .dag-modal-overlay {
       display: none; position: fixed; inset: 0;
@@ -1001,6 +1064,13 @@
     CTM Migration
     <span class="tab-badge" id="migration-badge">—</span>
   </button>
+  <button class="tab-btn" data-tab="deps" id="tab-btn-deps">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="5" cy="12" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="19" cy="19" r="2"/>
+      <path d="M7 12h4m2-5h-4l-2 5 2 5h4"/>
+    </svg>
+    Job Dependencies
+  </button>
 </nav>
 
 <!-- ── EA Landscape Tab ── -->
@@ -1433,6 +1503,91 @@
   </main>
 </div>
 
+<!-- ── Job Dependencies Tab ── -->
+<div class="tab-content" id="tab-deps">
+  <main>
+    <div class="section-card" style="padding:0;overflow:clip">
+
+      <!-- Page header -->
+      <div class="dep-page-header">
+        <div class="dep-header-left">
+          <h2 class="dep-title">Job Dependencies</h2>
+          <p class="dep-subtitle" id="dep-subtitle">Select an application to explore its cross-app job dependency graph</p>
+        </div>
+        <div class="dep-header-right">
+          <!-- Smart dropdown -->
+          <div class="dep-search-wrap" id="dep-search-wrap">
+            <svg class="dep-search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            <input type="text" id="dep-search-input" class="dep-search-input" placeholder="Search app code…" autocomplete="off" oninput="onDepSearchInput()" onfocus="showDepDropdown()" onblur="hideDepDropdown()">
+            <button class="dep-clear-btn" id="dep-clear-btn" onclick="clearDepSelection()" title="Clear" style="display:none">&times;</button>
+            <div class="dep-dropdown" id="dep-dropdown"></div>
+          </div>
+          <!-- Controls -->
+          <div class="dep-ctrl-row" id="dep-controls" style="display:none">
+            <div class="dag-ctrl-group">
+              <span class="dag-ctrl-group-label">Hops</span>
+              <button class="dag-seg-btn active" id="dep-hop-1" onclick="setDepHops(1)">1</button>
+              <button class="dag-seg-btn" id="dep-hop-2" onclick="setDepHops(2)">2</button>
+              <button class="dag-seg-btn" id="dep-hop-3" onclick="setDepHops(3)">3</button>
+            </div>
+            <div class="dag-ctrl-group">
+              <span class="dag-ctrl-group-label">Direction</span>
+              <button class="dag-seg-btn active" id="dep-dir-both" onclick="setDepDir('both')" title="Upstream + Downstream">Both</button>
+              <button class="dag-seg-btn" id="dep-dir-up" onclick="setDepDir('up')" title="Apps this app depends on">↑ Upstream</button>
+              <button class="dag-seg-btn" id="dep-dir-down" onclick="setDepDir('down')" title="Apps that depend on this app">↓ Downstream</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Graph area + detail panel -->
+      <div class="dep-body" id="dep-body">
+
+        <!-- Empty / no-data state -->
+        <div class="dep-empty" id="dep-empty">
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" style="color:#cbd5e1">
+            <circle cx="5" cy="12" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="19" cy="19" r="2"/>
+            <path d="M7 12h4m2-5h-4l-2 5 2 5h4"/>
+          </svg>
+          <p id="dep-empty-msg">Search for an app code above to visualise its cross-application dependencies.</p>
+        </div>
+
+        <!-- Graph canvas -->
+        <div class="dep-graph-wrap" id="dep-graph-wrap" style="display:none">
+          <div id="dep-graph"></div>
+          <div id="dep-tooltip" class="dag-tooltip"></div>
+        </div>
+
+        <!-- Slide-in detail panel -->
+        <div class="dep-detail-panel" id="dep-detail-panel">
+          <div class="dag-detail-hdr">
+            <span class="dag-detail-title" id="dep-detail-title">—</span>
+            <button class="dag-detail-close" onclick="closeDepDetail()" title="Close">&times;</button>
+          </div>
+          <div class="dag-detail-body" id="dep-detail-body"></div>
+          <div class="dag-detail-actions" id="dep-detail-actions"></div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="dep-footer" id="dep-footer" style="display:none">
+        <span class="dag-legend-item"><span class="dag-legend-dot" style="background:#f59e0b;width:14px;height:14px;border-radius:50%"></span>Selected app</span>
+        <span class="dag-legend-item"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#2563eb;margin-right:4px"></span>Cloud Migration</span>
+        <span class="dag-legend-item"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#10b981;margin-right:4px"></span>Maintain</span>
+        <span class="dag-legend-item"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#ef4444;margin-right:4px"></span>Decommission</span>
+        <span class="dag-legend-item"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#8b5cf6;margin-right:4px"></span>Upgrade</span>
+        <span class="dag-legend-item"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#f59e0b;margin-right:4px"></span>Replacement</span>
+        <span class="dag-legend-item"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#94a3b8;margin-right:4px"></span>No Plan</span>
+        <span class="dag-legend-item" style="color:#94a3b8;font-size:0.65rem">Node size = job count · Click node to inspect · Double-click to re-focus</span>
+        <span class="dag-stat" id="dep-stat"></span>
+      </div>
+
+    </div>
+  </main>
+</div>
+
 <!-- Chart Expand Modal -->
 <div class="chart-modal-overlay" id="chart-modal-overlay" onclick="closeChartModal()">
   <div class="chart-modal" onclick="event.stopPropagation()">
@@ -1549,8 +1704,9 @@
 const DATA = __DATA__;
 const APP_DATA = __APP_DATA__;
 const PLAN_DATA = __PLAN_DATA__;
-const DAG_DATA = __DAG_DATA__;
-const GEN_TIME = __GEN_TIME__;
+const DAG_DATA     = __DAG_DATA__;
+const APP_DEP_DATA = __APP_DEP_DATA__;
+const GEN_TIME     = __GEN_TIME__;
 
 // Build per-app Control-M job count (used by EA Landscape highlight toggle)
 const ctrlmJobCount = {};
@@ -3049,6 +3205,371 @@ function navigateMigByField(tr, field) {
 rebuildDashboardData();
 rebuildPlanStackedChart();
 
+// ── Job Dependencies Tab ──────────────────────────────────────────────────────
+// APP_DEP_DATA is pre-computed by Rust at build time: { nodes:[{ac,jc,pl}], edges:[{f,t,c}] }
+// This avoids iterating 28K raw DAG edges in JS at startup.
+
+const depAppJobCount   = {};  // appCode → jobs with cross-app edges (from APP_DEP_DATA nodes)
+const depAppTotalCount = {};  // appCode → total jobs in this app
+const depAppPlanMap    = {};  // appCode → plan string (normalised lowercase)
+const depAppOutEdges  = {};  // fromApp → { toApp: count }
+const depAppInEdges   = {};  // toApp   → { fromApp: count }
+
+if (APP_DEP_DATA) {
+  APP_DEP_DATA.nodes.forEach(n => {
+    depAppJobCount[n.ac]   = n.jc;
+    depAppTotalCount[n.ac] = n.tc;
+    depAppPlanMap[n.ac]    = (n.pl || '').toLowerCase();
+  });
+  APP_DEP_DATA.edges.forEach(e => {
+    if (!depAppOutEdges[e.f]) depAppOutEdges[e.f] = {};
+    depAppOutEdges[e.f][e.t] = (depAppOutEdges[e.f][e.t] || 0) + e.c;
+    if (!depAppInEdges[e.t]) depAppInEdges[e.t] = {};
+    depAppInEdges[e.t][e.f] = (depAppInEdges[e.t][e.f] || 0) + e.c;
+  });
+}
+
+// depAppList: sorted array of app codes that have cross-app edges (from APP_DEP_DATA)
+const depAppList = APP_DEP_DATA
+  ? APP_DEP_DATA.nodes.map(n => n.ac).sort((a, b) => a.localeCompare(b))
+  : [];
+
+// depAppJobMap: app_code → [job objects] — for detail-panel job listing (from DATA)
+const depAppJobMap = {};
+DATA.forEach(j => {
+  if (!j.ac) return;
+  if (!depAppJobMap[j.ac]) depAppJobMap[j.ac] = [];
+  depAppJobMap[j.ac].push(j);
+});
+
+// State
+// O(1) app info lookup (keyed by app_code)
+const depAppInfoMap = {};
+APP_DATA.forEach(a => { if (a.ac) depAppInfoMap[a.ac] = a; });
+
+let depSelectedApp  = null;
+let depHops         = 1;
+let depDir          = 'both';
+let depNetwork      = null;
+let depFocusApp     = null;
+
+function depPlanColor(appCode) {
+  const pl = depAppPlanMap[appCode] || '';
+  return PLAN_COLORS[pl] || PLAN_COLORS['No plan'];
+}
+
+// ── Smart dropdown ──
+let depDropdownItems = [];
+let depFocusedIdx    = -1;
+
+function onDepSearchInput() {
+  const q = document.getElementById('dep-search-input').value.trim().toLowerCase();
+  depDropdownItems = q
+    ? depAppList.filter(ac => ac.toLowerCase().includes(q))
+    : depAppList;
+  renderDepDropdown();
+  showDepDropdown();
+}
+
+function renderDepDropdown() {
+  const dd = document.getElementById('dep-dropdown');
+  const q  = document.getElementById('dep-search-input').value.trim().toLowerCase();
+  depFocusedIdx = -1;
+  if (!depDropdownItems.length) {
+    dd.innerHTML = '<div class="dep-dd-item" style="color:#94a3b8;cursor:default">No matching app codes</div>';
+    return;
+  }
+  dd.innerHTML = depDropdownItems.slice(0, 80).map((ac, i) => {
+    const jobCnt = depAppJobCount[ac] || 0;
+    const col    = depPlanColor(ac);
+    const hl     = q ? ac.replace(new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi'), '<mark>$1</mark>') : escHtml(ac);
+    return `<div class="dep-dd-item" data-idx="${i}" onmousedown="selectDepApp('${escHtml(ac)}')" ontouchstart="selectDepApp('${escHtml(ac)}')">
+      <span style="display:flex;align-items:center;gap:6px">
+        <span class="dep-dd-plan" style="background:${col}"></span>${hl}
+      </span>
+      <span class="dep-dd-count">${jobCnt.toLocaleString()} jobs</span>
+    </div>`;
+  }).join('');
+}
+
+function showDepDropdown() {
+  const dd = document.getElementById('dep-dropdown');
+  if (!depDropdownItems.length) {
+    depDropdownItems = depAppList;
+    renderDepDropdown();
+  }
+  dd.classList.add('open');
+}
+
+function hideDepDropdown() {
+  setTimeout(() => document.getElementById('dep-dropdown').classList.remove('open'), 180);
+}
+
+function selectDepApp(appCode) {
+  depSelectedApp = appCode;
+  depFocusApp    = appCode;
+  document.getElementById('dep-search-input').value = appCode;
+  document.getElementById('dep-clear-btn').style.display = '';
+  document.getElementById('dep-dropdown').classList.remove('open');
+  document.getElementById('dep-controls').style.display = '';
+  document.getElementById('dep-footer').style.display   = '';
+  document.getElementById('dep-empty').style.display    = 'none';
+  document.getElementById('dep-graph-wrap').style.display = '';
+  depSyncButtons();
+  buildDepGraph();
+}
+
+function clearDepSelection() {
+  depSelectedApp = null;
+  depFocusApp    = null;
+  document.getElementById('dep-search-input').value = '';
+  document.getElementById('dep-clear-btn').style.display = 'none';
+  document.getElementById('dep-controls').style.display = 'none';
+  document.getElementById('dep-footer').style.display   = 'none';
+  document.getElementById('dep-graph-wrap').style.display = 'none';
+  document.getElementById('dep-empty').style.display = '';
+  document.getElementById('dep-empty-msg').textContent = 'Search for an app code above to visualise its cross-application dependencies.';
+  document.getElementById('dep-subtitle').textContent   = 'Select an application to explore its cross-app job dependency graph';
+  document.getElementById('dep-stat').textContent = '';
+  closeDepDetail();
+  if (depNetwork) { depNetwork.destroy(); depNetwork = null; }
+  depDropdownItems = [];
+}
+
+function setDepHops(n) {
+  depHops = n;
+  depSyncButtons();
+  if (depSelectedApp) buildDepGraph();
+}
+
+function setDepDir(d) {
+  depDir = d;
+  depSyncButtons();
+  if (depSelectedApp) buildDepGraph();
+}
+
+function depSyncButtons() {
+  [1,2,3].forEach(n => document.getElementById('dep-hop-' + n)?.classList.toggle('active', n === depHops));
+  ['both','up','down'].forEach(d => document.getElementById('dep-dir-' + d)?.classList.toggle('active', d === depDir));
+}
+
+// BFS over app-level graph
+function depGetNeighbourhood(focusApp, hops, dir) {
+  const visitedApps = new Set([focusApp]);
+  const edges       = new Map();  // `${fromApp}→${toApp}` → count
+  let frontier      = [focusApp];
+  for (let h = 0; h < hops; h++) {
+    const next = [];
+    frontier.forEach(app => {
+      if (dir !== 'down') {
+        // upstream: apps that this app depends on (out-edges from this app)
+        const outs = depAppOutEdges[app] || {};
+        Object.entries(outs).forEach(([toApp, cnt]) => {
+          const key = app + '→' + toApp;
+          edges.set(key, { from: app, to: toApp, count: (edges.get(key)?.count || 0) + cnt });
+          if (!visitedApps.has(toApp)) { visitedApps.add(toApp); next.push(toApp); }
+        });
+      }
+      if (dir !== 'up') {
+        // downstream: apps that depend on this app (in-edges into this app)
+        const ins = depAppInEdges[app] || {};
+        Object.entries(ins).forEach(([fromApp, cnt]) => {
+          const key = fromApp + '→' + app;
+          edges.set(key, { from: fromApp, to: app, count: (edges.get(key)?.count || 0) + cnt });
+          if (!visitedApps.has(fromApp)) { visitedApps.add(fromApp); next.push(fromApp); }
+        });
+      }
+    });
+    frontier = next;
+    if (!frontier.length) break;
+  }
+  return { apps: visitedApps, edges };
+}
+
+function buildDepGraph() {
+  const container = document.getElementById('dep-graph');
+  if (!container || !depFocusApp) return;
+
+  const { apps, edges } = depGetNeighbourhood(depFocusApp, depHops, depDir);
+
+  // Build vis nodes
+  const visNodes = [...apps].map(ac => {
+    const depJobCount = depAppJobCount[ac] || 0;
+    const isFocus     = ac === depFocusApp;
+    const planColor   = depPlanColor(ac);
+    const size        = isFocus ? 32 : Math.max(16, Math.min(28, 10 + Math.sqrt(depJobCount) * 1.2));
+    return {
+      id:    ac,
+      label: ac + '\n' + depJobCount.toLocaleString() + ' dep jobs',
+      color: {
+        background: isFocus ? '#f59e0b' : planColor,
+        border:     isFocus ? '#d97706' : planColor,
+        highlight:  { background: isFocus ? '#fbbf24' : planColor, border: '#0f172a' },
+        hover:      { background: isFocus ? '#fbbf24' : planColor, border: '#0f172a' },
+      },
+      font:  { color: isFocus ? '#fff' : '#fff', size: 11, face: 'system-ui, sans-serif', multi: true },
+      size,
+      shape: isFocus ? 'ellipse' : 'box',
+      borderWidth: isFocus ? 3 : 1.5,
+      shadow: isFocus ? { enabled: true, color: 'rgba(245,158,11,0.4)', size: 12 } : false,
+      title: buildDepNodeTooltip(ac),
+    };
+  });
+
+  const visEdges = [...edges.values()].map((e, i) => ({
+    id:     i,
+    from:   e.from,
+    to:     e.to,
+    label:  e.count > 1 ? String(e.count) : '',
+    arrows: 'to',
+    color:  { color: '#94a3b8', highlight: '#475569', hover: '#475569' },
+    font:   { size: 9, color: '#94a3b8', align: 'middle' },
+    width:  Math.max(1, Math.min(4, 1 + Math.log2(e.count))),
+    smooth: { type: 'curvedCW', roundness: 0.2 },
+    title:  `${e.from} → ${e.to}: ${e.count.toLocaleString()} job condition${e.count > 1 ? 's' : ''}`,
+  }));
+
+  if (depNetwork) depNetwork.destroy();
+
+  depNetwork = new vis.Network(container,
+    { nodes: new vis.DataSet(visNodes), edges: new vis.DataSet(visEdges) },
+    {
+      physics: { enabled: true, stabilization: { iterations: 150 },
+        barnesHut: { gravitationalConstant: -8000, springLength: 160, springConstant: 0.04 } },
+      interaction: { hover: true, tooltipDelay: 150, hideEdgesOnDrag: false, navigationButtons: false },
+      layout:      { improvedLayout: true },
+      edges:       { selectionWidth: 2 },
+      nodes:       { borderWidthSelected: 3 },
+    }
+  );
+
+  // Hover tooltip
+  const tip = document.getElementById('dep-tooltip');
+  depNetwork.on('hoverNode', params => {
+    const ac = params.node;
+    tip.innerHTML = buildDepNodeTooltip(ac);
+    tip.style.display = 'block';
+  });
+  depNetwork.on('blurNode', () => { tip.style.display = 'none'; });
+  container.addEventListener('mousemove', ev => {
+    const r  = container.getBoundingClientRect();
+    tip.style.left = Math.min(ev.clientX - r.left + 14, r.width  - tip.offsetWidth  - 20) + 'px';
+    tip.style.top  = Math.min(ev.clientY - r.top  + 14, r.height - tip.offsetHeight - 20) + 'px';
+  }, { passive: true });
+
+  // Click → detail panel
+  depNetwork.on('click', params => {
+    if (!params.nodes.length) { tip.style.display = 'none'; return; }
+    openDepDetail(params.nodes[0]);
+  });
+
+  // Double-click → re-focus
+  depNetwork.on('doubleClick', params => {
+    if (!params.nodes.length) return;
+    depFocusApp = params.nodes[0];
+    document.getElementById('dep-search-input').value = depFocusApp;
+    buildDepGraph();
+  });
+
+  // Update stat line + subtitle
+  document.getElementById('dep-stat').textContent =
+    `${apps.size.toLocaleString()} apps · ${edges.size.toLocaleString()} cross-app links · ${depHops}-hop`;
+  const focusDepJobs   = depAppJobCount[depFocusApp] || 0;
+  const focusTotalJobs = depAppTotalCount[depFocusApp] || (depAppJobMap[depFocusApp] || []).length;
+  document.getElementById('dep-subtitle').textContent =
+    `${depFocusApp} — ${focusDepJobs.toLocaleString()} dep jobs of ${focusTotalJobs.toLocaleString()} total · ${apps.size - 1} connected app${apps.size !== 2 ? 's' : ''}`;
+
+  // Expose for testing
+  window.depNetwork = depNetwork;
+}
+
+function buildDepNodeTooltip(ac) {
+  const depJobs   = depAppJobCount[ac] || 0;
+  const totalJobs = depAppTotalCount[ac] || (depAppJobMap[ac] || []).length;
+  const plan      = depAppPlanMap[ac] || 'No plan';
+  const outCount  = Object.keys(depAppOutEdges[ac] || {}).length;
+  const inCount   = Object.keys(depAppInEdges[ac]  || {}).length;
+  const appInfo   = depAppInfoMap[ac] || {};
+  return `<b>${escHtml(ac)}</b>` +
+    (appInfo.ai ? `<span class="dag-tt-meta">${escHtml(appInfo.ai)}</span>` : '') +
+    `<span class="dag-tt-meta">${depJobs.toLocaleString()} dep jobs of ${totalJobs.toLocaleString()} total</span>` +
+    `<span class="dag-tt-meta">Plan: ${escHtml(plan)}</span>` +
+    `<span class="dag-tt-meta dag-tt-in">↑ depends on ${outCount} app${outCount !== 1 ? 's' : ''}</span>` +
+    `<span class="dag-tt-meta dag-tt-out">↓ depended on by ${inCount} app${inCount !== 1 ? 's' : ''}</span>`;
+}
+
+function openDepDetail(appCode) {
+  const depJobs   = depAppJobCount[appCode] || 0;
+  const totalJobs = depAppTotalCount[appCode] || (depAppJobMap[appCode] || []).length;
+  const plan     = depAppPlanMap[appCode] || 'No plan';
+  const planCol  = depPlanColor(appCode);
+  const appInfo  = depAppInfoMap[appCode] || {};
+  const outApps  = Object.entries(depAppOutEdges[appCode] || {}).sort((a,b) => b[1]-a[1]);
+  const inApps   = Object.entries(depAppInEdges[appCode]  || {}).sort((a,b) => b[1]-a[1]);
+
+  document.getElementById('dep-detail-title').textContent = appCode;
+
+  const body = document.getElementById('dep-detail-body');
+  body.innerHTML =
+    `<div class="dag-detail-field"><div class="lbl">App Code</div>
+       <div class="val"><span style="background:${escHtml(planCol)};color:#fff;padding:2px 8px;border-radius:4px;font-size:0.75rem">${escHtml(appCode)}</span></div></div>` +
+    (appInfo.ai ? `<div class="dag-detail-field"><div class="lbl">App ID</div><div class="val">${escHtml(appInfo.ai)}</div></div>` : '') +
+    (appInfo.dom ? `<div class="dag-detail-field"><div class="lbl">Domain</div><div class="val">${escHtml(stripPrefix(appInfo.dom))}</div></div>` : '') +
+    (appInfo.div ? `<div class="dag-detail-field"><div class="lbl">IT Division</div><div class="val">${escHtml(appInfo.div)}</div></div>` : '') +
+    `<div class="dag-detail-field"><div class="lbl">Dep Jobs</div><div class="val">${depJobs.toLocaleString()} <span style="color:#94a3b8;font-size:0.72rem">of ${totalJobs.toLocaleString()} total</span></div></div>` +
+    `<div class="dag-detail-field"><div class="lbl">Migration Plan</div>
+       <div class="val"><span style="background:${escHtml(planCol)};color:#fff;padding:2px 8px;border-radius:4px;font-size:0.72rem">${escHtml(plan)}</span></div></div>` +
+    (outApps.length ? `<div class="dag-detail-field"><div class="lbl">↑ Depends on</div>
+      <div class="val" style="display:flex;flex-direction:column;gap:3px">${outApps.slice(0,8).map(([ac,cnt]) =>
+        `<span style="font-size:0.72rem;display:flex;justify-content:space-between">
+          <span style="cursor:pointer;color:var(--primary)" onclick="refocusDepApp('${escHtml(ac)}')">${escHtml(ac)}</span>
+          <span style="color:#94a3b8">${cnt} link${cnt>1?'s':''}</span></span>`).join('') +
+        (outApps.length > 8 ? `<span style="font-size:0.7rem;color:#94a3b8">+${outApps.length-8} more</span>` : '')
+      }</div></div>` : '') +
+    (inApps.length ? `<div class="dag-detail-field"><div class="lbl">↓ Used by</div>
+      <div class="val" style="display:flex;flex-direction:column;gap:3px">${inApps.slice(0,8).map(([ac,cnt]) =>
+        `<span style="font-size:0.72rem;display:flex;justify-content:space-between">
+          <span style="cursor:pointer;color:var(--primary)" onclick="refocusDepApp('${escHtml(ac)}')">${escHtml(ac)}</span>
+          <span style="color:#94a3b8">${cnt} link${cnt>1?'s':''}</span></span>`).join('') +
+        (inApps.length > 8 ? `<span style="font-size:0.7rem;color:#94a3b8">+${inApps.length-8} more</span>` : '')
+      }</div></div>` : '');
+
+  const actions = document.getElementById('dep-detail-actions');
+  const jnJs = "'" + appCode.replace(/\\/g,'\\\\').replace(/'/g,"\\'") + "'";
+  actions.innerHTML =
+    `<button class="dag-detail-btn" onclick="navigateDepToJobs(${jnJs})">View Jobs in Jobs Tab ↗</button>` +
+    `<button class="dag-detail-btn secondary" onclick="refocusDepApp(${jnJs})">Re-focus graph here</button>`;
+
+  document.getElementById('dep-detail-panel').classList.add('open');
+  setTimeout(() => depNetwork && depNetwork.redraw(), 260);
+}
+
+function closeDepDetail() {
+  document.getElementById('dep-detail-panel').classList.remove('open');
+  setTimeout(() => depNetwork && depNetwork.redraw(), 260);
+}
+
+function refocusDepApp(appCode) {
+  depFocusApp = appCode;
+  document.getElementById('dep-search-input').value = appCode;
+  depSelectedApp = appCode;
+  closeDepDetail();
+  buildDepGraph();
+}
+
+function navigateDepToJobs(appCode) {
+  navigateToJobs('', '', appCode);
+}
+
+// Expose for testing
+window.depAppList    = depAppList;
+window.depAppJobMap  = depAppJobMap;
+window.depAppOutEdges = depAppOutEdges;
+window.depAppInEdges  = depAppInEdges;
+window.selectDepApp  = selectDepApp;
+window.openDepDetail = openDepDetail;
+window.closeDepDetail = closeDepDetail;
+
 // ── Tab switching ──
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -3635,6 +4156,8 @@ if (DAG_DATA) {
 }
 // Enrich with DATA (app code, appl_type, folder, domain, plan, etc.)
 DATA.forEach(j => { if (j.jn) dagJobDetail[j.jn] = j; });
+
+// depAppOutEdges/depAppInEdges/depAppList are built earlier from APP_DEP_DATA (pre-computed by Rust)
 
 let dagNetwork      = null;
 let dagFocusJobName = '';

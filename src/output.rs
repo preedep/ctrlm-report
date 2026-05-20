@@ -1,6 +1,7 @@
 use crate::model::{AppInventory, CtrlmPlan, DagData, Job};
 use anyhow::Result;
 use serde::Serialize;
+use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -130,6 +131,97 @@ impl<'a> ReportPlanItem<'a> {
     }
 }
 
+// Pre-aggregated app-level dependency graph for the Job Dependencies tab.
+// Built in Rust so the JS never has to iterate 28K raw edges at startup.
+#[derive(Debug, Serialize)]
+struct AppDepNode {
+    #[serde(rename = "ac")]
+    app_code: String,
+    #[serde(rename = "jc")]
+    job_count: usize,      // jobs that have at least one cross-app edge
+    #[serde(rename = "tc")]
+    total_count: usize,    // total jobs in this app
+    #[serde(rename = "pl")]
+    plan: String,
+}
+
+#[derive(Debug, Serialize)]
+struct AppDepEdge {
+    #[serde(rename = "f")]
+    from: String,
+    #[serde(rename = "t")]
+    to: String,
+    #[serde(rename = "c")]
+    count: usize,
+}
+
+#[derive(Debug, Serialize)]
+struct AppDepGraph {
+    nodes: Vec<AppDepNode>,
+    edges: Vec<AppDepEdge>,
+}
+
+/// Build a compact app-level dependency graph from the raw DAG + job list.
+/// Skips jobs with empty app_port_app_code, and skips self-loops.
+fn build_app_dep_graph(jobs: &[Job], dag: &DagData) -> AppDepGraph {
+    // Map job_name → app_code (only for jobs with a non-empty app_code)
+    let job_to_app: HashMap<&str, &str> = jobs
+        .iter()
+        .filter(|j| !j.app_port_app_code.is_empty() && !j.control_m_job_name.is_empty())
+        .map(|j| (j.control_m_job_name.as_str(), j.app_port_app_code.as_str()))
+        .collect();
+
+    // Map node_id → job_name
+    let id_to_job: HashMap<u64, &str> = dag.nodes.iter()
+        .map(|n| (n.id, n.job_name.as_str()))
+        .collect();
+
+    // Per-app total job counts and plan (first plan seen wins)
+    let mut app_job_count: HashMap<&str, usize> = HashMap::new();
+    let mut app_plan: HashMap<&str, &str> = HashMap::new();
+    for j in jobs {
+        if j.app_port_app_code.is_empty() { continue; }
+        *app_job_count.entry(&j.app_port_app_code).or_insert(0) += 1;
+        app_plan.entry(&j.app_port_app_code).or_insert(&j.app_port_application_plan);
+    }
+
+    // Cross-app edge counts + track which jobs are on a cross-app edge
+    let mut edge_counts: HashMap<(&str, &str), usize> = HashMap::new();
+    let mut dep_jobs_per_app: HashMap<&str, std::collections::HashSet<&str>> = HashMap::new();
+    for e in &dag.edges {
+        let from_job = match id_to_job.get(&e.from) { Some(j) => j, None => continue };
+        let to_job   = match id_to_job.get(&e.to)   { Some(j) => j, None => continue };
+        let from_app = match job_to_app.get(*from_job) { Some(a) => a, None => continue };
+        let to_app   = match job_to_app.get(*to_job)   { Some(a) => a, None => continue };
+        if from_app == to_app { continue; }  // skip same-app
+        *edge_counts.entry((from_app, to_app)).or_insert(0) += 1;
+        dep_jobs_per_app.entry(from_app).or_default().insert(from_job);
+        dep_jobs_per_app.entry(to_app).or_default().insert(to_job);
+    }
+
+    // Only include app nodes that appear in at least one cross-app edge
+    let connected_apps: std::collections::HashSet<&str> = edge_counts.keys()
+        .flat_map(|(f, t)| [*f, *t])
+        .collect();
+
+    let mut nodes: Vec<AppDepNode> = connected_apps.iter().map(|&ac| AppDepNode {
+        app_code:    ac.to_string(),
+        job_count:   dep_jobs_per_app.get(ac).map(|s| s.len()).unwrap_or(0),
+        total_count: *app_job_count.get(ac).unwrap_or(&0),
+        plan:        app_plan.get(ac).copied().unwrap_or("").to_string(),
+    }).collect();
+    nodes.sort_by(|a, b| a.app_code.cmp(&b.app_code));
+
+    let mut edges: Vec<AppDepEdge> = edge_counts.into_iter().map(|((f, t), c)| AppDepEdge {
+        from:  f.to_string(),
+        to:    t.to_string(),
+        count: c,
+    }).collect();
+    edges.sort_by(|a, b| a.from.cmp(&b.from).then(a.to.cmp(&b.to)));
+
+    AppDepGraph { nodes, edges }
+}
+
 const TEMPLATE: &str = include_str!("template.html");
 
 const MSAL_CDN: &str =
@@ -204,6 +296,11 @@ pub fn generate_report(
         None => "null".to_string(),
     };
 
+    let app_dep_json = match dag {
+        Some(d) => serde_json::to_string(&build_app_dep_graph(jobs, d))?,
+        None => "null".to_string(),
+    };
+
     let gen_time = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
@@ -223,6 +320,7 @@ pub fn generate_report(
         .replace("__APP_DATA__", &app_data_json)
         .replace("__PLAN_DATA__", &plan_data_json)
         .replace("__DAG_DATA__", &dag_json)
+        .replace("__APP_DEP_DATA__", &app_dep_json)
         .replace("__GEN_TIME__", &gen_time.to_string())
         .replace("__MSAL_CDN__", msal_cdn)
         .replace("__AUTH_STARTUP__", &auth_startup);
