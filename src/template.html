@@ -585,6 +585,20 @@
       border-left: 1px solid #e2e8f0; background: #fff; flex-shrink: 0;
     }
     .dep-detail-panel.open { width: 300px; }
+    .dep-howto {
+      background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0.875rem 2rem;
+    }
+    .dep-howto-inner { display: flex; gap: 2.5rem; flex-wrap: wrap; }
+    .dep-howto-col { flex: 1; min-width: 260px; }
+    .dep-howto-heading {
+      font-size: 0.72rem; font-weight: 700; color: #475569; text-transform: uppercase;
+      letter-spacing: 0.05em; margin-bottom: 0.4rem;
+    }
+    .dep-howto-list {
+      margin: 0; padding-left: 1.1rem; list-style: disc;
+      font-size: 0.76rem; color: #64748b; line-height: 1.7;
+    }
+    .dep-howto-list b { color: #334155; }
     .dep-footer {
       display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
       padding: 0.625rem 1.5rem; border-top: 1px solid #e2e8f0;
@@ -1070,6 +1084,7 @@
       <path d="M7 12h4m2-5h-4l-2 5 2 5h4"/>
     </svg>
     Job Dependencies
+    <span style="font-size:0.65rem;opacity:0.7;display:block;line-height:1">App Level</span>
   </button>
 </nav>
 
@@ -1511,8 +1526,8 @@
       <!-- Page header -->
       <div class="dep-page-header">
         <div class="dep-header-left">
-          <h2 class="dep-title">Job Dependencies</h2>
-          <p class="dep-subtitle" id="dep-subtitle">Select an application to explore its cross-app job dependency graph</p>
+          <h2 class="dep-title">Job Dependencies — Application Level</h2>
+          <p class="dep-subtitle" id="dep-subtitle">เลือก App Code เพื่อดูความสัมพันธ์ระหว่าง Application ผ่าน Control-M Job</p>
         </div>
         <div class="dep-header-right">
           <!-- Smart dropdown -->
@@ -1542,6 +1557,32 @@
         </div>
       </div>
 
+      <!-- How-to-read description -->
+      <div class="dep-howto" id="dep-howto">
+        <div class="dep-howto-inner">
+          <div class="dep-howto-col">
+            <div class="dep-howto-heading">วิธีอ่านแผนภาพ (How to read)</div>
+            <ul class="dep-howto-list">
+              <li><b>Node (วงกลม/กล่อง)</b> = 1 Application — แสดง App Code และจำนวน job ที่มี dependency ข้าม app</li>
+              <li><b>ลูกศร A → B</b> = Job ใน A ต้องทำงานเสร็จก่อน จึงจะ trigger job ใน B (A เป็น upstream ของ B)</li>
+              <li><b>ตัวเลขบนลูกศร</b> = จำนวน job condition ที่เชื่อมระหว่างสอง app</li>
+              <li><b>ขนาด node</b> = จำนวน dep jobs (ยิ่งใหญ่ = มี job เชื่อมกับ app อื่นมากกว่า)</li>
+              <li><b>สี node</b> = Migration plan ของ app นั้น (ดูตำนานด้านล่าง)</li>
+            </ul>
+          </div>
+          <div class="dep-howto-col">
+            <div class="dep-howto-heading">การใช้งาน (Usage)</div>
+            <ul class="dep-howto-list">
+              <li><b>Hops</b> — ระยะห่างจาก app ที่เลือก (<b>1</b> = app ที่เชื่อมกันโดยตรง ✓ แนะนำ, 2–3 = ขยายดู chain ที่ยาวขึ้น)</li>
+              <li><b>↑ Upstream</b> — แสดงเฉพาะ app ที่ app นี้พึ่งพา (app ที่ต้องทำงานก่อน)</li>
+              <li><b>↓ Downstream</b> — แสดงเฉพาะ app ที่พึ่งพา app นี้ (app ที่รอ app นี้)</li>
+              <li><b>คลิก node</b> — ดูรายละเอียด app และรายการ dependency ด้านขวา</li>
+              <li><b>ดับเบิลคลิก node</b> — เลื่อนโฟกัสไปที่ app นั้นและวาดกราฟใหม่</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
       <!-- Graph area + detail panel -->
       <div class="dep-body" id="dep-body">
 
@@ -1551,7 +1592,7 @@
             <circle cx="5" cy="12" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="19" cy="19" r="2"/>
             <path d="M7 12h4m2-5h-4l-2 5 2 5h4"/>
           </svg>
-          <p id="dep-empty-msg">Search for an app code above to visualise its cross-application dependencies.</p>
+          <p id="dep-empty-msg">ค้นหา App Code ด้านบนเพื่อดู cross-application dependency graph<br><span style="font-size:0.78rem;color:#94a3b8">Search an app code above to visualise cross-application dependencies</span></p>
         </div>
 
         <!-- Graph canvas -->
@@ -1580,7 +1621,7 @@
         <span class="dag-legend-item"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#8b5cf6;margin-right:4px"></span>Upgrade</span>
         <span class="dag-legend-item"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#f59e0b;margin-right:4px"></span>Replacement</span>
         <span class="dag-legend-item"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#94a3b8;margin-right:4px"></span>No Plan</span>
-        <span class="dag-legend-item" style="color:#94a3b8;font-size:0.65rem">Node size = job count · Click node to inspect · Double-click to re-focus</span>
+        <span class="dag-legend-item" style="color:#94a3b8;font-size:0.65rem">Node size = dep job count · A→B = A runs before B · Click to inspect · Double-click to re-focus</span>
         <span class="dag-stat" id="dep-stat"></span>
       </div>
 
@@ -3329,7 +3370,7 @@ function clearDepSelection() {
   document.getElementById('dep-graph-wrap').style.display = 'none';
   document.getElementById('dep-empty').style.display = '';
   document.getElementById('dep-empty-msg').textContent = 'Search for an app code above to visualise its cross-application dependencies.';
-  document.getElementById('dep-subtitle').textContent   = 'Select an application to explore its cross-app job dependency graph';
+  document.getElementById('dep-subtitle').textContent   = 'เลือก App Code เพื่อดูความสัมพันธ์ระหว่าง Application ผ่าน Control-M Job';
   document.getElementById('dep-stat').textContent = '';
   closeDepDetail();
   if (depNetwork) { depNetwork.destroy(); depNetwork = null; }
