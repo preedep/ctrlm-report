@@ -1565,8 +1565,8 @@
             <ul class="dep-howto-list">
               <li><b>Node (วงกลม/กล่อง)</b> = 1 Application — แสดง App Code และจำนวน job ที่มี dependency ข้าม app</li>
               <li><b>ลูกศร A → B</b> = Job ใน A ต้องทำงานเสร็จก่อน จึงจะ trigger job ใน B (A เป็น upstream ของ B)</li>
-              <li><b>ตัวเลขบนลูกศร</b> = จำนวน job condition ที่เชื่อมระหว่างสอง app</li>
-              <li><b>ขนาด node</b> = จำนวน dep jobs (ยิ่งใหญ่ = มี job เชื่อมกับ app อื่นมากกว่า)</li>
+              <li><b>ตัวเลขบนลูกศร</b> = จำนวน job condition ที่เชื่อมระหว่างสอง app เท่านั้น — ไม่ใช่จำนวน job ทั้งหมดที่ได้รับผลกระทบ (เช่น ALS→DLP: 5 = มี 5 condition เชื่อมกัน ไม่ใช่ 324 jobs ของ DLP ทั้งหมด)</li>
+              <li><b>ขนาด node</b> = จำนวน "linked jobs" คือ job ใน app นั้นที่มี dependency ข้าม app อย่างน้อย 1 เส้น (ไม่ใช่ job ทั้งหมดของ app)</li>
               <li><b>สี node</b> = Migration plan ของ app นั้น (ดูตำนานด้านล่าง)</li>
             </ul>
           </div>
@@ -3328,7 +3328,7 @@ function renderDepDropdown() {
       <span style="display:flex;align-items:center;gap:6px">
         <span class="dep-dd-plan" style="background:${col}"></span>${hl}
       </span>
-      <span class="dep-dd-count">${jobCnt.toLocaleString()} jobs</span>
+      <span class="dep-dd-count">${jobCnt.toLocaleString()} linked jobs</span>
     </div>`;
   }).join('');
 }
@@ -3441,7 +3441,7 @@ function buildDepGraph() {
     const size        = isFocus ? 32 : Math.max(16, Math.min(28, 10 + Math.sqrt(depJobCount) * 1.2));
     return {
       id:    ac,
-      label: ac + '\n' + depJobCount.toLocaleString() + ' dep jobs',
+      label: ac + '\n' + depJobCount.toLocaleString() + ' linked jobs',
       color: {
         background: isFocus ? '#f59e0b' : planColor,
         border:     isFocus ? '#d97706' : planColor,
@@ -3467,7 +3467,7 @@ function buildDepGraph() {
     font:   { size: 9, color: '#94a3b8', align: 'middle' },
     width:  Math.max(1, Math.min(4, 1 + Math.log2(e.count))),
     smooth: { type: 'curvedCW', roundness: 0.2 },
-    title:  `${e.from} → ${e.to}: ${e.count.toLocaleString()} job condition${e.count > 1 ? 's' : ''}`,
+    title:  `${e.from} → ${e.to}\n${e.count.toLocaleString()} job condition${e.count > 1 ? 's' : ''} trigger this link\n(not all jobs in ${e.to} are affected)`,
   }));
 
   if (depNetwork) depNetwork.destroy();
@@ -3518,7 +3518,7 @@ function buildDepGraph() {
   const focusDepJobs   = depAppJobCount[depFocusApp] || 0;
   const focusTotalJobs = depAppTotalCount[depFocusApp] || (depAppJobMap[depFocusApp] || []).length;
   document.getElementById('dep-subtitle').textContent =
-    `${depFocusApp} — ${focusDepJobs.toLocaleString()} dep jobs of ${focusTotalJobs.toLocaleString()} total · ${apps.size - 1} connected app${apps.size !== 2 ? 's' : ''}`;
+    `${depFocusApp} — ${focusDepJobs.toLocaleString()} jobs with cross-app links (of ${focusTotalJobs.toLocaleString()} total) · ${apps.size - 1} connected app${apps.size !== 2 ? 's' : ''}`;
 
   // Expose for testing
   window.depNetwork = depNetwork;
@@ -3535,7 +3535,7 @@ function buildDepNodeTooltip(ac) {
   const appInfo   = depAppInfoMap[ac] || {};
   return `<b>${escHtml(ac)}</b>` +
     (appInfo.ai ? `<span class="dag-tt-meta">${escHtml(appInfo.ai)}</span>` : '') +
-    `<span class="dag-tt-meta">${depJobs.toLocaleString()} dep jobs of ${totalJobs.toLocaleString()} total</span>` +
+    `<span class="dag-tt-meta">${depJobs.toLocaleString()} jobs with cross-app links (${totalJobs.toLocaleString()} total in app)</span>` +
     `<span class="dag-tt-meta">Plan: ${escHtml(plan)}</span>` +
     (dependsOnCount ? `<span class="dag-tt-meta dag-tt-in">↑ depends on ${dependsOnCount} app${dependsOnCount !== 1 ? 's' : ''}</span>` : '') +
     (usedByCount    ? `<span class="dag-tt-meta dag-tt-out">↓ used by ${usedByCount} app${usedByCount !== 1 ? 's' : ''}</span>` : '');
@@ -3561,7 +3561,7 @@ function openDepDetail(appCode) {
     (appInfo.ai ? `<div class="dag-detail-field"><div class="lbl">App ID</div><div class="val">${escHtml(appInfo.ai)}</div></div>` : '') +
     (appInfo.dom ? `<div class="dag-detail-field"><div class="lbl">Domain</div><div class="val">${escHtml(stripPrefix(appInfo.dom))}</div></div>` : '') +
     (appInfo.div ? `<div class="dag-detail-field"><div class="lbl">IT Division</div><div class="val">${escHtml(appInfo.div)}</div></div>` : '') +
-    `<div class="dag-detail-field"><div class="lbl">Dep Jobs</div><div class="val">${depJobs.toLocaleString()} <span style="color:#94a3b8;font-size:0.72rem">of ${totalJobs.toLocaleString()} total</span></div></div>` +
+    `<div class="dag-detail-field"><div class="lbl">Linked Jobs</div><div class="val">${depJobs.toLocaleString()} <span style="color:#94a3b8;font-size:0.72rem">jobs with cross-app links (${totalJobs.toLocaleString()} total in app)</span></div></div>` +
     `<div class="dag-detail-field"><div class="lbl">Migration Plan</div>
        <div class="val"><span style="background:${escHtml(planCol)};color:#fff;padding:2px 8px;border-radius:4px;font-size:0.72rem">${escHtml(plan)}</span></div></div>` +
     (dependsOnApps.length ? `<div class="dag-detail-field"><div class="lbl">↑ Depends on</div>
