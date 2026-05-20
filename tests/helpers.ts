@@ -11,8 +11,8 @@ export const D = {
   UNMATCHED_JOBS:   2_553,
   CRITICAL_JOBS:    0,
   PLAN_TOTAL:       7,
-  PLAN_DONE:        3,
-  PLAN_IN_PROGRESS: 4,
+  PLAN_DONE:        4,
+  PLAN_IN_PROGRESS: 3,
   get PLAN_NOT_STARTED() { return this.TOTAL_JOBS - this.PLAN_DONE - this.PLAN_IN_PROGRESS; },
 
   // Known app codes present in both jobs + inventory
@@ -26,6 +26,17 @@ export const D = {
 
   // Known job for search
   JOB_NAME: 'AFT_DEPOSIT_DORMANT_NOTICE_01',
+
+  // DAG viewer — jobs confirmed present in both DATA and jobs_dag.json
+  DAG_ROOT_JOB:   'AFT_DEPOSIT_DORMANT_NOTICE_01', // no in-edges (root)
+  DAG_LEAF_JOB:   'AFT_DEPOSIT_DORMANT_NOTICE_03', // no out-edges (leaf)
+  DAG_MIDDLE_JOB: 'RT_AFT_B2K_TO_ETER_CARDX1031',  // has both upstream + downstream
+  DAG_MIDDLE_PREDECESSOR: 'RT_AFT_B2K_TO_ETER_CARDX1025',
+  DAG_MIDDLE_SUCCESSOR:   'RT_AFT_B2K_TO_ETER_CARDX1035',
+  DAG_MIDDLE_APP_CODE:    'B2K',
+  DAG_MIDDLE_APPL_TYPE:   'FILE_TRANS',
+  DAG_MIDDLE_DESCRIPTION: 'AFT B2K TO EMS',  // description from jobs_dag.json node
+  DAG_ROOT_DESCRIPTION:   'OP20-100766',
 } as const;
 
 /** Wait for the JS initialisation to complete (EA stat pill is populated last). */

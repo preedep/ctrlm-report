@@ -6,7 +6,7 @@
 
 `ctrlm-report` is a Rust binary crate (edition 2024). Its purpose is to generate self-contained HTML reports for `ctrlm` (control-m) workflows.
 
-It reads `dataset/output.json` (Control-M jobs), `dataset/output_app_inventory.json` (full application portfolio), and `dataset/output_controlm_plan.json` (CTM→Airflow migration plan), embeds all three datasets into `src/template.html`, and writes a standalone `report.html` — no server required.
+It reads `dataset/output.json` (Control-M jobs), `dataset/output_app_inventory.json` (full application portfolio), `dataset/output_controlm_plan.json` (CTM→Airflow migration plan), and optionally `dataset/jobs_dag.json` (job dependency graph), embeds all datasets into `src/template.html`, and writes a standalone `report.html` — no server required.
 
 
 
@@ -16,9 +16,9 @@ It reads `dataset/output.json` (Control-M jobs), `dataset/output_app_inventory.j
 - Keep I/O at the edges; pure logic in the middle.
 - Module layout:
   - `main.rs` — CLI arg parsing via `clap`, wires `input` → `output`
-  - `input.rs` — `load_jobs()` deserializes `output.json` into `Vec<Job>`; `load_app_inventory()` deserializes `output_app_inventory.json` into `Vec<AppInventory>`; `load_controlm_plan()` deserializes `output_controlm_plan.json` into `Vec<CtrlmPlan>`
-  - `model.rs` — `Job` struct (Control-M job + app portfolio fields); `AppInventory` struct (app portfolio only); `CtrlmPlan` struct (migration plan entry)
-  - `output.rs` — builds compact `ReportJob`, `ReportAppItem`, and `ReportPlanItem` (short serde keys to reduce size), serializes to JSON, and injects into `template.html` via `__DATA__` / `__APP_DATA__` / `__PLAN_DATA__` / `__GEN_TIME__` / `__MSAL_CDN__` / `__AUTH_STARTUP__` placeholders; holds `AuthConfig` struct
+  - `input.rs` — `load_jobs()` deserializes `output.json` into `Vec<Job>`; `load_app_inventory()` deserializes `output_app_inventory.json` into `Vec<AppInventory>`; `load_controlm_plan()` deserializes `output_controlm_plan.json` into `Vec<CtrlmPlan>`; `load_dag()` deserializes `jobs_dag.json` into `DagData`
+  - `model.rs` — `Job` struct (Control-M job + app portfolio fields); `AppInventory` struct (app portfolio only); `CtrlmPlan` struct (migration plan entry); `DagNode` / `DagEdge` / `DagMeta` / `DagData` structs (job dependency graph)
+  - `output.rs` — builds compact `ReportJob`, `ReportAppItem`, and `ReportPlanItem` (short serde keys to reduce size), serializes to JSON, and injects into `template.html` via `__DATA__` / `__APP_DATA__` / `__PLAN_DATA__` / `__DAG_DATA__` / `__GEN_TIME__` / `__MSAL_CDN__` / `__AUTH_STARTUP__` placeholders; holds `AuthConfig` struct
   - `template.html` — the full HTML/JS report template, embedded at compile time via `include_str!`
 
 ## Dependencies
@@ -34,8 +34,9 @@ clap        = { version = "4", features = ["derive"] }
 ## CLI Usage
 
 ```bash
-cargo run                                                                          # reads all three default datasets, writes report.html (no auth)
+cargo run                                                                          # reads all datasets (including jobs_dag.json if present), writes report.html (no auth)
 cargo run -- -i path/to/data.json -a path/to/inventory.json -p path/to/plan.json -o out.html  # custom paths
+cargo run -- --dag path/to/jobs_dag.json                                           # explicit DAG path (default: dataset/jobs_dag.json; skipped if absent)
 
 # Build with Entra ID authentication gate (MSAL.js injected into report.html)
 cargo run -- --auth --client-id <APP_CLIENT_ID> --tenant-id <TENANT_ID>
@@ -115,6 +116,39 @@ Control-m Migration plan - information current status of each application code /
 }
 ```
 
+### Input `dataset/jobs_dag.json` (optional)
+
+Control-M job dependency graph — nodes and directed edges representing job execution order. Optional: if absent, the DAG viewer is silently disabled and job name cells render as plain text.
+
+```json
+{
+  "meta": {
+    "node_count": 23768,
+    "edge_count": 28355,
+    "exported_at": "2026-05-20T11:06:34Z"
+  },
+  "nodes": [
+    { "id": 77453, "job_name": "AFT_DEPOSIT_DORMANT_NOTICE_01" }
+  ],
+  "edges": [
+    {
+      "from": 77453,
+      "to": 77455,
+      "condition": "AFT_DEPOSIT_DORMANT_NOTICE_01-ENDED-OK",
+      "sign": "",
+      "odate": "ODAT",
+      "and_or": "A"
+    }
+  ]
+}
+```
+
+| Edge field | Meaning |
+|------------|---------|
+| `from` / `to` | Node `id` of producer → consumer |
+| `condition` | Control-M condition name that links them |
+| `and_or` | `"A"` = AND (all must fire), `"O"` = OR (any fires) |
+
 ## Data Mapping
 
 Application criticality level Mapping to Application Level or App level
@@ -135,10 +169,11 @@ Application criticality level Mapping to Application Level or App level
 - `ReportJob` uses short serde rename keys (`jn`, `fo`, `ap`, …) to reduce embedded JSON payload size.
 - `ReportAppItem` uses short serde rename keys (`ac`, `ai`, `pl`, `cat`, `cl`, `dom`, `div`, `oc`, `sd`, `la`) — same key conventions as `ReportJob` where fields overlap.
 - `ReportPlanItem` uses short serde rename keys (`jn`, `sr`, `st`, `dn`) — `jn` matches `ReportJob` so the migration tab can join against `DATA` by job name.
-- Five template placeholders injected by `output.rs`:
+- Six template placeholders injected by `output.rs`:
   - `__DATA__` → Control-M jobs (`DATA` in JS)
   - `__APP_DATA__` → app portfolio (`APP_DATA` in JS)
   - `__PLAN_DATA__` → migration plan (`PLAN_DATA` in JS)
+  - `__DAG_DATA__` → job dependency graph (`DAG_DATA` in JS) — full `DagData` JSON, or `null` if `--dag` file is absent; when `null` job names render as plain text and the DAG modal is unavailable
   - `__GEN_TIME__` → Unix timestamp of report generation
   - `__MSAL_CDN__` → MSAL.js `<script>` tag (auth build) or empty string (default)
   - `__AUTH_STARTUP__` → async MSAL login flow with `clientId`/`tenantId` baked in (auth build) or direct `hideLoader()` call (default)
@@ -222,6 +257,16 @@ Keep these IDs in `src/template.html` — removing or renaming them will break t
 **Loading overlay**
 - `#loading-overlay` — full-screen white overlay; hidden by adding class `hidden` after all init / after auth
 - `#loader-sub-text` — subtitle text updated via `setLoaderMsg(msg)` JS helper (e.g. "Signing in…" during MSAL flow)
+
+**DAG Dependency Viewer modal (present only when `--dag` file was provided at build time)**
+- `#dag-modal-overlay` — full-screen modal backdrop
+- `#dag-graph` — vis-network canvas container
+- `#dag-modal-title` — job name heading
+- `#dag-modal-subtitle` — subtitle line
+- `#dag-no-data` — shown when `DAG_DATA` is null or job not found in DAG
+- `#dag-stat` — footer node/edge count text
+- `#dag-hop-1`, `#dag-hop-2`, `#dag-hop-3` — hop selector buttons
+- `#dag-layout-lr`, `#dag-layout-ud`, `#dag-layout-force` — layout selector buttons
 
 **Auth (present in all builds; shown/populated only in `--auth` builds)**
 - `#auth-user` — user pill in header (`display:none` by default; set to `flex` after successful login)
@@ -369,3 +414,16 @@ Keep these IDs in `src/template.html` — removing or renaming them will break t
   - **Search** across job name / SR no / DAG name; **status filter** dropdown; **Export CSV** (`exportMigCSV()`)
   - Tab badge shows `PLAN_DATA.length` (jobs currently in the plan file)
   - JS entry point: `buildMigrationDashboard()` called once at startup; `renderMigTable()` handles search/filter/pagination; state vars: `migStatusFilter`, `migSearch`, `migPage`, `migDonutInst`
+- **DAG Dependency Viewer** — visualizes Control-M job dependency chains; activated by clicking a job name in the Jobs tab
+  - Requires `dataset/jobs_dag.json` at build time; gracefully disabled (plain text job names) when absent
+  - Uses `vis-network@9.1.9` (unpkg CDN) for graph rendering
+  - `DAG_DATA` JS constant holds the full `{ meta, nodes, edges }` object (or `null`)
+  - Lookup indices built at startup: `dagNodeById` (id→node), `dagNodeByName` (job_name→node), `dagOutEdges` (from-id→edges), `dagInEdges` (to-id→edges)
+  - `openDagModal(jobName)` — opens the dark-theme full-screen modal for a given job name
+  - `dagGetNeighbourhood(focusId, hops)` — BFS in both directions (predecessors + successors) up to N hops
+  - `buildDagNetwork()` — renders subgraph via `vis.Network` inside `#dag-graph`
+  - Controls: **Hops** (1 / 2 / 3), **Layout** (L→R hierarchical / T→D hierarchical / Force-directed), **Fit** button
+  - Node color coding: amber = focused job, blue = root (no predecessors in subgraph), green = leaf (no successors), dark = middle
+  - Hover tooltip shows upstream (green) and downstream (red) condition names + total degree
+  - Double-click any neighbour node to re-focus the graph on that job
+  - Escape key or backdrop click closes the modal

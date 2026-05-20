@@ -528,6 +528,162 @@
 
     .chart-modal-body { flex: 1; padding: 1.5rem; overflow: hidden; min-height: 0; }
 
+    /* ── DAG Dependency Viewer Modal ── */
+    .dag-modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(15,23,42,0.65); backdrop-filter: blur(4px);
+      z-index: 300; align-items: center; justify-content: center; padding: 1.25rem;
+    }
+    .dag-modal-overlay.open { display: flex; }
+
+    .dag-modal {
+      background: #ffffff; border-radius: 16px;
+      width: min(98vw, 1520px); height: min(94vh, 960px);
+      display: flex; flex-direction: column;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.22), 0 0 0 1px rgba(0,0,0,0.06);
+      overflow: hidden; color: #0f172a;
+    }
+
+    /* header */
+    .dag-modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.7rem 1.25rem; background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0; flex-shrink: 0; gap: 1rem;
+    }
+    .dag-modal-title-wrap { display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+    .dag-modal-title {
+      font-size: 0.875rem; font-weight: 700; color: #0f172a;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .dag-modal-subtitle { font-size: 0.7rem; color: #94a3b8; margin-top: 1px; }
+
+    /* control groups */
+    .dag-modal-controls { display: flex; align-items: center; gap: 0.6rem; flex-shrink: 0; flex-wrap: wrap; }
+    .dag-ctrl-group {
+      display: flex; align-items: center; gap: 0; background: #f1f5f9;
+      border: 1px solid #e2e8f0; border-radius: 7px; overflow: hidden;
+    }
+    .dag-ctrl-group-label {
+      padding: 0 8px; font-size: 0.68rem; font-weight: 600; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: 0.04em;
+      border-right: 1px solid #e2e8f0; background: #f8fafc; white-space: nowrap;
+      display: flex; align-items: center; height: 100%;
+    }
+    .dag-seg-btn {
+      background: transparent; color: #475569; border: none; border-left: 1px solid #e2e8f0;
+      padding: 4px 10px; font-size: 0.72rem; cursor: pointer; transition: all 0.12s;
+      white-space: nowrap;
+    }
+    .dag-seg-btn:first-of-type { border-left: none; }
+    .dag-seg-btn:hover { background: #e2e8f0; color: #0f172a; }
+    .dag-seg-btn.active { background: #2563eb; color: #fff; font-weight: 600; }
+
+    .dag-icon-btn {
+      background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;
+      border-radius: 7px; padding: 4px 10px; font-size: 0.72rem; cursor: pointer;
+      transition: all 0.12s; white-space: nowrap;
+    }
+    .dag-icon-btn:hover { background: #e2e8f0; color: #0f172a; }
+
+    .dag-close-btn {
+      width: 30px; height: 30px; border-radius: 7px; border: 1px solid #e2e8f0;
+      background: #f8fafc; cursor: pointer; display: flex; align-items: center;
+      justify-content: center; font-size: 1.1rem; color: #64748b; transition: all 0.12s;
+      flex-shrink: 0;
+    }
+    .dag-close-btn:hover { background: #fee2e2; color: #ef4444; border-color: #ef4444; }
+
+    /* body: graph + detail panel */
+    .dag-modal-body {
+      flex: 1; display: flex; min-height: 0; overflow: hidden;
+      background: #f8fafc;
+    }
+    .dag-graph-wrap {
+      flex: 1; position: relative; min-width: 0; overflow: hidden;
+      background: #ffffff;
+      /* subtle dot-grid background */
+      background-image: radial-gradient(circle, #cbd5e1 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+    #dag-graph { width: 100%; height: 100%; }
+
+    /* hover tooltip (lightweight) */
+    .dag-tooltip {
+      position: absolute; background: #1e293b; border: 1px solid #334155;
+      border-radius: 8px; padding: 8px 12px; font-size: 0.72rem;
+      pointer-events: none; display: none; max-width: 280px; z-index: 20;
+      line-height: 1.7; color: #e2e8f0; box-shadow: 0 8px 24px rgba(0,0,0,0.28);
+    }
+    .dag-tooltip b { color: #7dd3fc; display: block; font-size: 0.75rem; margin-bottom: 2px; }
+    .dag-tooltip .dag-tt-meta { color: #94a3b8; font-size: 0.68rem; }
+    .dag-tooltip .dag-tt-in  { color: #86efac; font-size: 0.68rem; }
+    .dag-tooltip .dag-tt-out { color: #fca5a5; font-size: 0.68rem; }
+
+    /* detail side panel */
+    .dag-detail-panel {
+      width: 0; flex-shrink: 0; overflow: hidden;
+      background: #ffffff; border-left: 1px solid #e2e8f0;
+      display: flex; flex-direction: column;
+      transition: width 0.22s ease;
+    }
+    .dag-detail-panel.open { width: 300px; }
+    .dag-detail-hdr {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.75rem 1rem; border-bottom: 1px solid #f1f5f9; flex-shrink: 0;
+    }
+    .dag-detail-hdr h4 { margin: 0; font-size: 0.8rem; font-weight: 700; color: #0f172a; }
+    .dag-detail-close {
+      width: 24px; height: 24px; border-radius: 5px; border: 1px solid #e2e8f0;
+      background: #f8fafc; cursor: pointer; display: flex; align-items: center;
+      justify-content: center; font-size: 1rem; color: #64748b; transition: all 0.12s;
+    }
+    .dag-detail-close:hover { background: #fee2e2; color: #ef4444; border-color: #ef4444; }
+    .dag-detail-body { flex: 1; overflow-y: auto; padding: 0.75rem 1rem; font-size: 0.78rem; }
+    .dag-detail-field { margin-bottom: 0.65rem; }
+    .dag-detail-field .lbl { font-size: 0.67rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 2px; }
+    .dag-detail-field .val { color: #0f172a; word-break: break-all; }
+    .dag-detail-field .val.mono { font-family: ui-monospace, monospace; font-size: 0.72rem; color: #1e40af; }
+    .dag-detail-field .val.muted { color: #94a3b8; }
+    .dag-detail-field .val.desc { white-space: pre-wrap; word-break: break-word; font-size: 0.75rem; color: #334155; line-height: 1.6; background: #f8fafc; border-radius: 6px; padding: 6px 8px; border: 1px solid #e2e8f0; }
+    .dag-detail-divider { border: none; border-top: 1px solid #f1f5f9; margin: 0.6rem 0; }
+    .dag-detail-badge {
+      display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px;
+      border-radius: 9999px; font-size: 0.68rem; font-weight: 600;
+    }
+    .dag-detail-actions { padding: 0.75rem 1rem; border-top: 1px solid #f1f5f9; display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+    .dag-detail-action-btn {
+      width: 100%; padding: 6px 12px; border-radius: 7px; border: 1px solid #e2e8f0;
+      background: #f8fafc; color: #2563eb; font-size: 0.75rem; font-weight: 600;
+      cursor: pointer; text-align: center; transition: all 0.12s;
+    }
+    .dag-detail-action-btn:hover { background: #2563eb; color: #fff; border-color: #2563eb; }
+    .dag-detail-action-btn.secondary { color: #475569; }
+    .dag-detail-action-btn.secondary:hover { background: #475569; color: #fff; border-color: #475569; }
+
+    /* no-data placeholder */
+    .dag-no-data {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 0.75rem;
+      color: #94a3b8; text-align: center; padding: 2rem; background: #f8fafc;
+    }
+    .dag-no-data p { margin: 0; font-size: 0.875rem; }
+
+    /* footer */
+    .dag-modal-footer {
+      display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+      padding: 0.45rem 1.25rem; background: #f8fafc;
+      border-top: 1px solid #e2e8f0; flex-shrink: 0;
+    }
+    .dag-legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.68rem; color: #64748b; }
+    .dag-legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+    .dag-stat { margin-left: auto; font-size: 0.68rem; color: #94a3b8; }
+
+    /* job-name cell clickable style */
+    .job-name-dag-link {
+      color: var(--primary); cursor: pointer; text-decoration: none; transition: color 0.12s;
+    }
+    .job-name-dag-link:hover { color: var(--primary-dark); text-decoration: underline; }
+
     /* ── EA Landscape – Enterprise Architecture View ── */
     .eal-page-hdr { display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; padding:1.25rem 1.5rem; border-bottom:1px solid var(--border); background:#fff; }
     .eal-page-hdr h2 { margin:0; font-size:1.05rem; font-weight:700; color:var(--text); }
@@ -1292,16 +1448,108 @@
   </div>
 </div>
 
+<!-- DAG Dependency Viewer Modal -->
+<div class="dag-modal-overlay" id="dag-modal-overlay" onclick="closeDagModal()">
+  <div class="dag-modal" onclick="event.stopPropagation()">
+
+    <!-- Header toolbar -->
+    <div class="dag-modal-header">
+      <div class="dag-modal-title-wrap">
+        <span class="dag-modal-title" id="dag-modal-title">Job Dependencies</span>
+        <span class="dag-modal-subtitle" id="dag-modal-subtitle"></span>
+      </div>
+      <div class="dag-modal-controls">
+
+        <!-- Hops -->
+        <div class="dag-ctrl-group">
+          <span class="dag-ctrl-group-label">Hops</span>
+          <button class="dag-seg-btn" id="dag-hop-1" onclick="setDagHops(1)">1</button>
+          <button class="dag-seg-btn" id="dag-hop-2" onclick="setDagHops(2)">2</button>
+          <button class="dag-seg-btn" id="dag-hop-3" onclick="setDagHops(3)">3</button>
+          <button class="dag-seg-btn" id="dag-hop-4" onclick="setDagHops(4)">4</button>
+          <button class="dag-seg-btn" id="dag-hop-5" onclick="setDagHops(5)">5</button>
+        </div>
+
+        <!-- Direction -->
+        <div class="dag-ctrl-group">
+          <span class="dag-ctrl-group-label">Direction</span>
+          <button class="dag-seg-btn active" id="dag-dir-both" onclick="setDagDir('both')" title="Upstream + Downstream">Both</button>
+          <button class="dag-seg-btn" id="dag-dir-up" onclick="setDagDir('up')" title="Upstream (what this job depends on)">↑ Upstream</button>
+          <button class="dag-seg-btn" id="dag-dir-down" onclick="setDagDir('down')" title="Downstream (what depends on this job)">↓ Downstream</button>
+        </div>
+
+        <!-- Layout -->
+        <div class="dag-ctrl-group">
+          <span class="dag-ctrl-group-label">Layout</span>
+          <button class="dag-seg-btn" id="dag-layout-lr" onclick="setDagLayout('LR')">L→R</button>
+          <button class="dag-seg-btn" id="dag-layout-ud" onclick="setDagLayout('UD')">T→D</button>
+          <button class="dag-seg-btn active" id="dag-layout-force" onclick="setDagLayout('force')">Force</button>
+        </div>
+
+        <button class="dag-icon-btn" onclick="dagNetwork && dagNetwork.fit()" title="Fit graph to screen">⊞ Fit</button>
+        <button class="dag-close-btn" onclick="closeDagModal()" title="Close">&times;</button>
+      </div>
+    </div>
+
+    <!-- Body: graph canvas + detail side panel -->
+    <div class="dag-modal-body">
+      <div class="dag-graph-wrap">
+        <div id="dag-no-data" class="dag-no-data" style="display:none">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:#cbd5e1">
+            <circle cx="12" cy="12" r="9"/><path d="M9 9h.01M15 9h.01M9.5 15a3.5 3.5 0 0 0 5 0"/>
+          </svg>
+          <p>No dependency data available for this job.</p>
+          <p style="font-size:0.75rem">The DAG file was not included in this report build.</p>
+        </div>
+        <div id="dag-graph"></div>
+        <div id="dag-tooltip" class="dag-tooltip"></div>
+      </div>
+
+      <!-- Slide-in detail panel -->
+      <div class="dag-detail-panel" id="dag-detail-panel">
+        <div class="dag-detail-hdr">
+          <h4 id="dag-detail-title">Job Detail</h4>
+          <button class="dag-detail-close" onclick="closeDagDetail()" title="Close panel">&times;</button>
+        </div>
+        <div class="dag-detail-body" id="dag-detail-body"></div>
+        <div class="dag-detail-actions" id="dag-detail-actions"></div>
+      </div>
+    </div>
+
+    <!-- Footer legend -->
+    <div class="dag-modal-footer">
+      <span class="dag-legend-item">
+        <span class="dag-legend-dot" style="background:#f59e0b;outline:2px solid #fcd34d;outline-offset:1px"></span>Focused job
+      </span>
+      <span class="dag-legend-item">
+        <span class="dag-legend-dot" style="background:#2563eb"></span>Root (no predecessors)
+      </span>
+      <span class="dag-legend-item">
+        <span class="dag-legend-dot" style="background:#059669"></span>Leaf (no successors)
+      </span>
+      <span class="dag-legend-item">
+        <span class="dag-legend-dot" style="background:#64748b"></span>Middle
+      </span>
+      <span class="dag-legend-item" style="color:#94a3b8;font-size:0.65rem">
+        Click node to inspect · Double-click to re-focus
+      </span>
+      <span class="dag-stat" id="dag-stat"></span>
+    </div>
+  </div>
+</div>
+
 <!-- EA Landscape tooltip (must be before script so getElementById finds it) -->
 <div id="eal-tip" role="tooltip" aria-hidden="true"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
 <script>
 // ── Embedded data ──
 const DATA = __DATA__;
 const APP_DATA = __APP_DATA__;
 const PLAN_DATA = __PLAN_DATA__;
+const DAG_DATA = __DAG_DATA__;
 const GEN_TIME = __GEN_TIME__;
 
 // Build per-app Control-M job count (used by EA Landscape highlight toggle)
@@ -3016,8 +3264,12 @@ function renderTable() {
       ? (migEntry.st === 'Done' ? ' class="mig-done"' : migEntry.st === 'In Progress' ? ' class="mig-inprog"' : '')
       : '';
 
+    const jnCell = DAG_DATA
+      ? `<span class="job-name-dag-link" onclick="openDagModal('${escHtml(row.jn)}')" title="Click to view job dependencies">${escHtml(row.jn) || '—'}</span>`
+      : (escHtml(row.jn) || '—');
+
     return `<tr${rowCls}>
-      <td class="job-name" title="${escHtml(row.jn)}">${escHtml(row.jn) || '—'}</td>
+      <td class="job-name" title="${escHtml(row.jn)}">${jnCell}</td>
       <td title="${escHtml(row.fo)}">${escHtml(row.fo) || '—'}</td>
       <td title="${escHtml(row.ap)}">${escHtml(row.ap) || '—'}</td>
       <td title="${escHtml(row.sa)}">${escHtml(row.sa) || '—'}</td>
@@ -3362,6 +3614,354 @@ function expandPlanChart() {
     });
   });
 }
+
+// ── DAG Dependency Viewer ──
+// Build lookup structures once at startup if DAG data is available
+const dagNodeById   = {};  // id → node
+const dagNodeByName = {};  // job_name → node
+const dagJobDetail  = {};  // job_name → DATA row (enrichment from jobs dataset)
+const dagOutEdges   = {};  // from-id → [edges]
+const dagInEdges    = {};  // to-id   → [edges]
+
+if (DAG_DATA) {
+  DAG_DATA.nodes.forEach(n => {
+    dagNodeById[n.id]         = n;
+    dagNodeByName[n.job_name] = n;
+  });
+  DAG_DATA.edges.forEach(e => {
+    (dagOutEdges[e.from] = dagOutEdges[e.from] || []).push(e);
+    (dagInEdges[e.to]   = dagInEdges[e.to]   || []).push(e);
+  });
+}
+// Enrich with DATA (app code, appl_type, folder, domain, plan, etc.)
+DATA.forEach(j => { if (j.jn) dagJobDetail[j.jn] = j; });
+
+let dagNetwork      = null;
+let dagFocusJobName = '';
+let dagHops         = 1;
+let dagLayout       = 'force';
+let dagDir          = 'both';   // 'both' | 'up' | 'down'
+let dagLastNodeIds  = new Set();
+
+// ── helpers ──
+function dagSyncButtons() {
+  [1,2,3,4,5].forEach(h =>
+    document.getElementById('dag-hop-' + h).classList.toggle('active', h === dagHops));
+  ['both','up','down'].forEach(d =>
+    document.getElementById('dag-dir-' + d).classList.toggle('active', d === dagDir));
+  ['lr','ud','force'].forEach(l =>
+    document.getElementById('dag-layout-' + l).classList.toggle('active', l === dagLayout.toLowerCase()));
+}
+
+function openDagModal(jobName) {
+  if (!DAG_DATA) {
+    document.getElementById('dag-no-data').style.display = 'flex';
+    document.getElementById('dag-graph').style.display   = 'none';
+    document.getElementById('dag-modal-overlay').classList.add('open');
+    return;
+  }
+  dagFocusJobName = jobName;
+  const detail = dagJobDetail[jobName] || {};
+  document.getElementById('dag-modal-title').textContent    = jobName;
+  document.getElementById('dag-modal-subtitle').textContent =
+    [detail.ac && `App: ${detail.ac}`, detail.at && `Type: ${detail.at}`, detail.dom && stripPrefix(detail.dom)]
+      .filter(Boolean).join(' · ') || 'Control-M job dependency graph';
+  document.getElementById('dag-no-data').style.display = 'none';
+  document.getElementById('dag-graph').style.display   = 'block';
+  document.getElementById('dag-modal-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  closeDagDetail();
+  dagSyncButtons();
+  buildDagNetwork();
+}
+
+function closeDagModal() {
+  document.getElementById('dag-modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+  if (dagNetwork) { dagNetwork.destroy(); dagNetwork = null; }
+  closeDagDetail();
+}
+
+function setDagHops(n)      { dagHops   = n;      dagSyncButtons(); buildDagNetwork(); }
+function setDagLayout(l)    { dagLayout = l;      dagSyncButtons(); buildDagNetwork(); }
+function setDagDir(d)       { dagDir    = d;      dagSyncButtons(); buildDagNetwork(); }
+
+// ── neighbourhood BFS ──
+function dagGetNeighbourhood(focusId, hops, dir) {
+  const visitedNodes = new Set([focusId]);
+  const visitedEdges = new Set();
+  let frontier = [focusId];
+
+  for (let h = 0; h < hops; h++) {
+    const next = [];
+    frontier.forEach(nid => {
+      if (dir !== 'up') {   // downstream: follow out-edges
+        (dagOutEdges[nid] || []).forEach(e => {
+          visitedEdges.add(e);
+          if (!visitedNodes.has(e.to))   { visitedNodes.add(e.to);   next.push(e.to);   }
+        });
+      }
+      if (dir !== 'down') { // upstream: follow in-edges
+        (dagInEdges[nid] || []).forEach(e => {
+          visitedEdges.add(e);
+          if (!visitedNodes.has(e.from)) { visitedNodes.add(e.from); next.push(e.from); }
+        });
+      }
+    });
+    frontier = next;
+    if (frontier.length === 0) break;
+  }
+  return { nodeIds: visitedNodes, edges: visitedEdges };
+}
+
+// ── node label: 3-line (job name / app code / appl type) ──
+function dagNodeLabel(jobName, isFocus) {
+  const d   = dagJobDetail[jobName] || {};
+  const ac  = d.ac  || '—';
+  const at  = d.at  || '—';
+  // vis-network uses '\n' for multi-line box labels
+  return `${jobName}\n${ac}  ·  ${at}`;
+}
+
+// ── render ──
+function buildDagNetwork() {
+  const focusNode = dagNodeByName[dagFocusJobName];
+  if (!focusNode) {
+    document.getElementById('dag-no-data').style.display = 'flex';
+    document.getElementById('dag-graph').style.display   = 'none';
+    document.getElementById('dag-stat').textContent      = 'Job not found in DAG';
+    return;
+  }
+  document.getElementById('dag-no-data').style.display = 'none';
+  document.getElementById('dag-graph').style.display   = 'block';
+
+  const { nodeIds, edges } = dagGetNeighbourhood(focusNode.id, dagHops, dagDir);
+  dagLastNodeIds = nodeIds;
+
+  // sub-graph degree for role classification
+  const subIn  = {}; const subOut = {};
+  nodeIds.forEach(id => { subIn[id] = 0; subOut[id] = 0; });
+  edges.forEach(e => { subOut[e.from]++; subIn[e.to]++; });
+
+  // node palette (light-background friendly, high contrast)
+  const PAL = {
+    focus:  { bg: '#f59e0b', border: '#d97706', font: '#1c1917' },
+    root:   { bg: '#2563eb', border: '#1d4ed8', font: '#ffffff' },
+    leaf:   { bg: '#059669', border: '#047857', font: '#ffffff' },
+    middle: { bg: '#475569', border: '#334155', font: '#f8fafc' },
+  };
+
+  const visNodes = [...nodeIds].map(id => {
+    const n       = dagNodeById[id];
+    const isFocus = id === focusNode.id;
+    const pal     = isFocus ? PAL.focus
+                  : subIn[id]  === 0 ? PAL.root
+                  : subOut[id] === 0 ? PAL.leaf
+                  : PAL.middle;
+    const d = dagJobDetail[n.job_name] || {};
+    return {
+      id,
+      label:       dagNodeLabel(n.job_name, isFocus),
+      color:       { background: pal.bg, border: pal.border, highlight: { background: '#fbbf24', border: '#d97706' } },
+      font:        { color: pal.font, size: isFocus ? 12 : 11, multi: false, face: 'ui-monospace,monospace' },
+      shape:       'box',
+      borderWidth: isFocus ? 3 : 1.5,
+      margin:      { top: 7, right: 10, bottom: 7, left: 10 },
+      widthConstraint: { maximum: 260 },
+      shadow:      isFocus ? { enabled: true, color: 'rgba(245,158,11,0.35)', size: 14, x: 0, y: 3 } : false,
+      // store metadata for detail panel
+      _jn: n.job_name, _detail: d,
+    };
+  });
+
+  let edgeIdx = 0;
+  const visEdges = [...edges].map(e => ({
+    id:     edgeIdx++,
+    from:   e.from,
+    to:     e.to,
+    arrows: { to: { enabled: true, scaleFactor: 0.7 } },
+    color:  { color: '#94a3b8', highlight: '#f59e0b', opacity: 1 },
+    width:  1.5,
+    smooth: dagLayout === 'force'
+      ? { type: 'dynamic' }
+      : { type: 'cubicBezier', forceDirection: dagLayout === 'LR' ? 'horizontal' : 'vertical' },
+    label:  e.and_or === 'O' ? 'OR' : '',
+    font:   { color: '#94a3b8', size: 9, align: 'middle', background: 'rgba(248,250,252,0.85)' },
+    title:  `${e.condition}\nodate: ${e.odate}  and_or: ${e.and_or}`,
+  }));
+
+  const container = document.getElementById('dag-graph');
+  const options   = {
+    nodes:   { margin: 6 },
+    edges:   { width: 1.5 },
+    physics: dagLayout === 'force'
+      ? { enabled: true, solver: 'forceAtlas2Based',
+          forceAtlas2Based: { gravitationalConstant: -80, centralGravity: 0.01, springLength: 140, springConstant: 0.08, damping: 0.7 },
+          stabilization: { iterations: 250, updateInterval: 50 } }
+      : { enabled: false },
+    layout:  dagLayout === 'LR'
+      ? { hierarchical: { direction: 'LR', sortMethod: 'directed', levelSeparation: 180, nodeSpacing: 100 } }
+      : dagLayout === 'UD'
+      ? { hierarchical: { direction: 'UD', sortMethod: 'directed', levelSeparation: 110, nodeSpacing: 140 } }
+      : {},
+    interaction: { hover: true, tooltipDelay: 150, hideEdgesOnDrag: true, navigationButtons: false },
+  };
+
+  if (dagNetwork) dagNetwork.destroy();
+  dagNetwork = new vis.Network(container,
+    { nodes: new vis.DataSet(visNodes), edges: new vis.DataSet(visEdges) }, options);
+
+  dagNetwork.once('stabilizationIterationsDone', () =>
+    dagNetwork.fit({ animation: { duration: 400, easingFunction: 'easeInOutQuad' } }));
+  if (dagLayout !== 'force') dagNetwork.fit();
+
+  // ── hover tooltip (lightweight) ──
+  const tip = document.getElementById('dag-tooltip');
+  function showDagTooltipForNode(nodeId) {
+    const node  = dagNodeById[nodeId];
+    if (!node) return;
+    const d     = dagJobDetail[node.job_name] || {};
+    const totalIn  = (dagInEdges[node.id]  || []).length;
+    const totalOut = (dagOutEdges[node.id] || []).length;
+    const ins   = (dagInEdges[node.id]  || []).filter(e => nodeIds.has(e.from)).map(e => `↑ ${e.condition}`).join('<br>');
+    const outs  = (dagOutEdges[node.id] || []).filter(e => nodeIds.has(e.to)).map(e => `↓ ${e.condition}`).join('<br>');
+    const rawDesc = (node.description || '').replace(/[\r\n]+/g, ' ').trim();
+    const shortDesc = rawDesc.length > 80 ? rawDesc.slice(0, 80) + '…' : rawDesc;
+    tip.innerHTML =
+      `<b>${escHtml(node.job_name)}</b>` +
+      (shortDesc ? `<span class="dag-tt-meta" style="color:#cbd5e1;font-style:italic">${escHtml(shortDesc)}</span>` : '') +
+      `<span class="dag-tt-meta">${d.ac ? 'App: ' + escHtml(d.ac) + ' &nbsp;·&nbsp; ' : ''}${d.at ? 'Type: ' + escHtml(d.at) : ''}</span>` +
+      `<span class="dag-tt-meta">↑ ${totalIn} predecessors &nbsp; ↓ ${totalOut} successors</span>` +
+      (ins  ? `<br><span class="dag-tt-in">${ins}</span>`   : '') +
+      (outs ? `<br><span class="dag-tt-out">${outs}</span>` : '');
+    tip.style.display = 'block';
+  }
+  window.showDagTooltipForNode = showDagTooltipForNode;
+  window.showDagTooltipForJob = (jobName) => {
+    const node = dagNodeByName[jobName];
+    if (node) showDagTooltipForNode(node.id);
+  };
+  dagNetwork.on('hoverNode', params => showDagTooltipForNode(params.node));
+  dagNetwork.on('blurNode', () => { tip.style.display = 'none'; });
+  container.addEventListener('mousemove', ev => {
+    const r = container.getBoundingClientRect();
+    const tx = ev.clientX - r.left + 14;
+    const ty = ev.clientY - r.top  + 14;
+    // keep tooltip inside graph area
+    tip.style.left = Math.min(tx, r.width  - tip.offsetWidth  - 20) + 'px';
+    tip.style.top  = Math.min(ty, r.height - tip.offsetHeight - 20) + 'px';
+  }, { passive: true });
+
+  // ── single click → open detail panel ──
+  dagNetwork.on('click', params => {
+    if (!params.nodes.length) { tip.style.display = 'none'; return; }
+    const node = dagNodeById[params.nodes[0]];
+    if (node) openDagDetail(node.job_name);
+  });
+
+  // ── double-click → re-focus on that job ──
+  dagNetwork.on('doubleClick', params => {
+    if (!params.nodes.length) return;
+    const node = dagNodeById[params.nodes[0]];
+    if (node) openDagModal(node.job_name);
+  });
+
+  const dirLabel = dagDir === 'up' ? 'upstream' : dagDir === 'down' ? 'downstream' : 'both';
+  document.getElementById('dag-stat').textContent =
+    `${nodeIds.size.toLocaleString()} nodes · ${edges.size.toLocaleString()} edges · ${dagHops}-hop · ${dirLabel}`;
+}
+
+// ── Detail side panel ──
+function openDagDetail(jobName) {
+  const n = dagJobDetail[jobName] || {};
+  const m = migPlanIndex[jobName];
+  const totalIn  = (dagInEdges[dagNodeByName[jobName]?.id]  || []).length;
+  const totalOut = (dagOutEdges[dagNodeByName[jobName]?.id] || []).length;
+
+  document.getElementById('dag-detail-title').textContent = 'Job Detail';
+
+  const field = (label, val, cls = '') =>
+    val ? `<div class="dag-detail-field"><div class="lbl">${label}</div><div class="val${cls ? ' ' + cls : ''}">${val}</div></div>` : '';
+
+  const migBadge = m
+    ? (m.st === 'Done'
+        ? `<span class="dag-detail-badge" style="background:#d1fae5;color:#065f46">✓ Done</span>`
+        : m.st === 'In Progress'
+        ? `<span class="dag-detail-badge" style="background:#fef3c7;color:#92400e">⏳ In Progress</span>`
+        : `<span class="dag-detail-badge" style="background:#f1f5f9;color:#475569">${escHtml(m.st)}</span>`)
+    : `<span class="dag-detail-badge" style="background:#f1f5f9;color:#94a3b8">Not Started</span>`;
+
+  const dagNode   = dagNodeByName[jobName] || {};
+  const nodeDesc  = (dagNode.description || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+
+  document.getElementById('dag-detail-body').innerHTML =
+    field('Job Name',    escHtml(jobName), 'mono') +
+    (nodeDesc ? `<div class="dag-detail-field"><div class="lbl">Description</div><div class="val desc">${escHtml(nodeDesc)}</div></div>` : '') +
+    `<hr class="dag-detail-divider">` +
+    field('App Code',    n.ac  ? `<span class="badge badge-blue">${escHtml(n.ac)}</span>`  : '<span class="muted">—</span>') +
+    field('Appl Type',   n.at  ? `<span class="badge">${escHtml(n.at)}</span>` : '') +
+    field('Task Type',   escHtml(n.tt)) +
+    field('Folder',      escHtml(n.fo), 'mono') +
+    field('Application', escHtml(n.ap)) +
+    field('Sub-App',     escHtml(n.sa)) +
+    `<hr class="dag-detail-divider">` +
+    field('Domain',      escHtml(stripPrefix(n.dom))) +
+    field('Sub-Domain',  escHtml(stripPrefix(n.sd))) +
+    field('IT Division', escHtml(n.div)) +
+    field('App Plan',    n.pl  ? planBadge(n.pl)  : '') +
+    field('Criticality', escHtml(n.cl)) +
+    field('Critical',    n.cr  ? critBadge(n.cr)  : '') +
+    `<hr class="dag-detail-divider">` +
+    `<div class="dag-detail-field"><div class="lbl">Migration Status</div><div class="val">${migBadge}</div></div>` +
+    (m?.sr ? field('SR No',   escHtml(m.sr)) : '') +
+    (m?.dn ? field('DAG Name', escHtml(m.dn), 'mono') : '') +
+    `<hr class="dag-detail-divider">` +
+    `<div class="dag-detail-field"><div class="lbl">Dependencies</div><div class="val">` +
+    `↑ ${totalIn} predecessor${totalIn !== 1 ? 's' : ''} &nbsp; ↓ ${totalOut} successor${totalOut !== 1 ? 's' : ''}` +
+    `</div></div>`;
+
+  const actEl = document.getElementById('dag-detail-actions');
+  // Use single-quote delimited JS strings to avoid double-quote collision inside onclick=""
+  const jnJs  = "'" + jobName.replace(/\\/g,'\\\\').replace(/'/g,"\\'") + "'";
+  const acJs  = "'" + (n.ac||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'") + "'";
+  actEl.innerHTML =
+    `<button class="dag-detail-action-btn" onclick="navigateDagToJobs(${jnJs},${acJs})">
+       ↗ View in Jobs Tab
+     </button>` +
+    `<button class="dag-detail-action-btn secondary" onclick="openDagModal(${jnJs})">
+       ⊙ Re-focus graph here
+     </button>`;
+
+  document.getElementById('dag-detail-panel').classList.add('open');
+  // notify vis-network that its container resized
+  setTimeout(() => dagNetwork && dagNetwork.redraw(), 250);
+}
+
+function closeDagDetail() {
+  document.getElementById('dag-detail-panel').classList.remove('open');
+  setTimeout(() => dagNetwork && dagNetwork.redraw(), 250);
+}
+
+function navigateDagToJobs(jobName, appCode) {
+  closeDagModal();
+  // navigateToJobs calls resetAllJobFilters() which clears searchQuery,
+  // so set the search term AFTER navigateToJobs has finished.
+  navigateToJobs('', '', appCode || '');
+  searchQuery = jobName.toLowerCase();
+  document.getElementById('search-input').value = jobName;
+  applyFilters();
+}
+
+// Close DAG modal on Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (document.getElementById('dag-detail-panel').classList.contains('open')) {
+      closeDagDetail();
+    } else if (document.getElementById('dag-modal-overlay').classList.contains('open')) {
+      closeDagModal();
+    }
+  }
+});
 
 // ── CTM Migration Dashboard ──
 const MIG_STATUS_STYLE = {

@@ -22,6 +22,10 @@ struct Args {
     #[arg(short = 'p', long, default_value = "dataset/output_controlm_plan.json")]
     plan: PathBuf,
 
+    /// Path to the job dependency DAG JSON file (optional)
+    #[arg(long, default_value = "dataset/jobs_dag.json")]
+    dag: PathBuf,
+
     /// Path for the output HTML report
     #[arg(short, long, default_value = "report.html")]
     output: PathBuf,
@@ -65,11 +69,21 @@ fn main() -> Result<()> {
     let plan = input::load_controlm_plan(&args.plan)?;
     eprintln!("Loaded {} migration plan items", plan.len());
 
+    let dag = if args.dag.exists() {
+        eprintln!("Reading {}", args.dag.display());
+        let d = input::load_dag(&args.dag)?;
+        eprintln!("Loaded DAG: {} nodes, {} edges", d.meta.node_count, d.meta.edge_count);
+        Some(d)
+    } else {
+        eprintln!("DAG file not found ({}), skipping", args.dag.display());
+        None
+    };
+
     if auth.enabled {
         eprintln!("Auth: Entra ID enabled (client_id={})", auth.client_id);
     }
 
-    output::generate_report(&jobs, &app_inventory, &plan, &args.output, &auth)?;
+    output::generate_report(&jobs, &app_inventory, &plan, dag.as_ref(), &args.output, &auth)?;
     eprintln!("Report written to {}", args.output.display());
 
     Ok(())

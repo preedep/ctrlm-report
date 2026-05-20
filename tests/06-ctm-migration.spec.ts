@@ -22,11 +22,11 @@ test.describe('CTM Migration Tab', () => {
       );
     });
 
-    test('Done card = 3', async ({ page }) => {
+    test('Done card = 4', async ({ page }) => {
       await expect(page.locator('#mig-stat-done')).toHaveText(String(D.PLAN_DONE));
     });
 
-    test('In Progress card = 4', async ({ page }) => {
+    test('In Progress card = 3', async ({ page }) => {
       await expect(page.locator('#mig-stat-inprog')).toHaveText(String(D.PLAN_IN_PROGRESS));
     });
 

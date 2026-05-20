@@ -25,6 +25,40 @@ pub struct AppInventory {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct DagNode {
+    pub id: u64,
+    pub job_name: String,
+    #[serde(default)]
+    pub description: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct DagEdge {
+    pub from: u64,
+    pub to: u64,
+    pub condition: String,
+    #[serde(default)]
+    pub sign: String,
+    #[serde(default)]
+    pub odate: String,
+    pub and_or: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct DagMeta {
+    pub node_count: u64,
+    pub edge_count: u64,
+    pub exported_at: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct DagData {
+    pub meta: DagMeta,
+    pub nodes: Vec<DagNode>,
+    pub edges: Vec<DagEdge>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct CtrlmPlan {
     #[serde(default)]
     pub control_m_job_name: String,

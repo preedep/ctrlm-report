@@ -1,4 +1,4 @@
-use crate::model::{AppInventory, CtrlmPlan, Job};
+use crate::model::{AppInventory, CtrlmPlan, DagData, Job};
 use anyhow::Result;
 use serde::Serialize;
 use std::fs;
@@ -186,6 +186,7 @@ pub fn generate_report(
     jobs: &[Job],
     app_inventory: &[AppInventory],
     plan: &[CtrlmPlan],
+    dag: Option<&DagData>,
     output_path: &Path,
     auth: &AuthConfig,
 ) -> Result<()> {
@@ -197,6 +198,11 @@ pub fn generate_report(
 
     let report_plan: Vec<ReportPlanItem<'_>> = plan.iter().map(ReportPlanItem::from_plan).collect();
     let plan_data_json = serde_json::to_string(&report_plan)?;
+
+    let dag_json = match dag {
+        Some(d) => serde_json::to_string(d)?,
+        None => "null".to_string(),
+    };
 
     let gen_time = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -216,6 +222,7 @@ pub fn generate_report(
         .replace("__DATA__", &data_json)
         .replace("__APP_DATA__", &app_data_json)
         .replace("__PLAN_DATA__", &plan_data_json)
+        .replace("__DAG_DATA__", &dag_json)
         .replace("__GEN_TIME__", &gen_time.to_string())
         .replace("__MSAL_CDN__", msal_cdn)
         .replace("__AUTH_STARTUP__", &auth_startup);
